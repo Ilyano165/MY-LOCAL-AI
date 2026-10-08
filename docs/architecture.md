@@ -340,6 +340,20 @@ class Evaluator(Protocol):
 
 Details in `evaluation.md`.
 
+### 6.10 Umsetzungsstand Modellschicht (2026-10-08)
+
+Die Modellschicht ist in `models/` implementiert (siehe `models/README.md`). Abweichungen
+vom Zielbild oben, bewusst und revidierbar:
+
+- Typen und `ModelProvider` liegen vorerst in `models/base.py` statt in `core/`; Umzug, sobald
+  ein zweites Paket sie braucht.
+- Datentypen als `dataclasses` (frozen, Validierung in `__post_init__`) statt pydantic –
+  eine Abhängigkeit weniger. Neubewertung beim Config-System (Phase 1).
+- Die Rollen heißen im Code `TaskType` (FAST, CODING, REASONING, VISION, GENERAL);
+  `ModelRegistry.find_best_for` übernimmt die Rolle→Modell-Auflösung. Der Router (Phase 3)
+  wird nur noch die Klassifikation Aufgabe→`TaskRequirements` liefern.
+- Streaming und exakte Token-Zählung sind noch nicht implementiert.
+
 ## 7. Agent-Laufzeit (Request-Lebenszyklus)
 
 ```

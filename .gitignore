@@ -33,3 +33,6 @@ htmlcov/
 .idea/
 .vscode/
 .DS_Store
+
+# Lokale Modellkonfiguration (Vorlage: config/models.example.toml)
+/config/models.toml

@@ -30,6 +30,11 @@ implementieren → Tests → Fehler beheben → dokumentieren.
 
 ## Phase 2 – Model Provider
 
+> **Stand 2026-10-08: Kern umgesetzt** (vorgezogen vor Phase 1): `models/` mit
+> `ModelProvider`, `OpenAICompatibleProvider`, `ModelRegistry` inkl. `find_best_for`,
+> `InferenceEngine` (Timeout, Fallback), `ModelHealthChecker`, 116 Unit-Tests.
+> Offen: Streaming, Token-Zählung, nativer Ollama-Provider, Smoke-Test gegen echte Runtime.
+
 - `OpenAICompatibleProvider` (chat, stream, tools, JSON-Schema-Output, health)
 - `OllamaProvider` (native API, Embeddings, Modellliste)
 - Robuste Fehlerbehandlung: Timeouts, Retries mit Backoff, `ContextOverflow`, ungültiges JSON

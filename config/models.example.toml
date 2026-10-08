@@ -1,0 +1,51 @@
+# NOVA – Modellkonfiguration (Beispiel)
+#
+# Kopiere diese Datei nach ~/.nova/models.toml (oder config/models.toml, gitignored)
+# und passe sie an die Modelle an, die du lokal tatsächlich betreibst.
+# Modellnamen stehen AUSSCHLIESSLICH hier – niemals im Code.
+#
+# Einheiten:
+#   parameter_count     Zahl oder "8B" / "600M"
+#   memory_requirement  GB (Gewichte + typischer KV-Cache), Zahl oder "6GB"
+#   *_capability        none | basic | good | strong
+#   speed               slow | medium | fast   (auf DEINER Hardware)
+#
+# Secrets: niemals hier eintragen. Für Runtimes mit API-Key nur den NAMEN der
+# Umgebungsvariable angeben: api_key_env = "NOVA_LOCAL_API_KEY"
+
+[inference]
+default_timeout_s = 120
+
+# Eine laufende lokale Runtime, z. B.:
+#   llama-server -m ~/.nova/models/<datei>.gguf --alias local-general --jinja \
+#                --host 127.0.0.1 --port 8080 --ctx-size 32768
+# (--jinja ist für Tool-Calling erforderlich)
+[[providers]]
+name = "llamacpp"
+type = "openai_compatible"
+base_url = "http://127.0.0.1:8080"
+health_path = "/health"
+timeout_s = 120
+
+# Alternative: Ollama (OpenAI-kompatibler Endpunkt, kein /health)
+# [[providers]]
+# name = "ollama"
+# type = "openai_compatible"
+# base_url = "http://127.0.0.1:11434"
+# health_path = "/"
+
+[[models]]
+name = "local-general"          # interner Registry-Name
+served_name = "local-general"   # Name, unter dem die Runtime das Modell kennt (--alias)
+provider = "llamacpp"
+parameter_count = "8B"
+context_length = 32768
+reasoning_capability = "good"
+coding_capability = "good"
+vision_capability = "none"
+tool_calling = true
+speed = "medium"
+memory_requirement = 6.5
+quantization = "Q4_K_M"
+# local_path = "~/.nova/models/<datei>.gguf"   # optional: wird vom Health Check geprüft
+license = "apache-2.0"                         # zusätzliche Felder landen in `extra`

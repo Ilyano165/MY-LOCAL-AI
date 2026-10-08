@@ -3,7 +3,18 @@
 Vollständig lokale, persönliche KI-Plattform: lokales Open-Weight-Modell + Model Router +
 Planung + Tools + Memory + RAG + Context Management + Self-Verification + Evaluation + UI.
 
-**Status:** Phase 0 – Architektur & Planung. Noch kein ausführbarer Code.
+**Status:** Phase 0 abgeschlossen; Model-Engine-Layer (`models/`) implementiert und getestet.
+
+## Entwicklung
+
+```bash
+uv venv .venv && uv pip install --python .venv/bin/python -e ".[dev]"
+.venv/bin/python -m pytest          # Unit-Tests (ohne Modell)
+.venv/bin/ruff check . && .venv/bin/mypy
+# Health Check gegen laufende lokale Runtime:
+.venv/bin/python -m scripts.model_health --config config/models.toml
+# Integrationstests: NOVA_IT_CONFIG=config/models.toml .venv/bin/python -m pytest -m integration
+```
 
 ## Dokumentation
 
