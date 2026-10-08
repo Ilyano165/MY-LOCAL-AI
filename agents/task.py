@@ -80,6 +80,9 @@ class Constraints:
     tool_timeout_s: float = 60.0
     allowed_tools: list[str] | None = None
     test_command: list[str] | None = None
+    verification_strategy: str = "auto"
+    """Strategie der Verification Engine für das Gesamtergebnis: ``auto`` (aus Aufgabe und
+    Artefakten abgeleitet), ``code``, ``files``, ``research``, ``math``, ``text`` oder ``none``."""
     """Wird nach Änderungen an Python-Dateien automatisch als Verifikation ausgeführt."""
     notes: list[str] = field(default_factory=list)
     """Freitext-Vorgaben des Nutzers (z. B. 'keine neuen Abhängigkeiten')."""
@@ -248,6 +251,8 @@ class FinalResult:
     summary: str
     unverified_subtasks: list[str] = field(default_factory=list)
     failed_subtasks: list[str] = field(default_factory=list)
+    quality: dict[str, Any] | None = None
+    """Quality Score der Verification Engine (internes Maß, keine Wahrscheinlichkeit)."""
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> FinalResult:
@@ -277,6 +282,8 @@ class Task:
     recalled_memories: list[dict[str, Any]] = field(default_factory=list)
     """Beim Start abgerufene Erinnerungen (id, layer, kind, content, score)."""
     memory_context: str = ""
+    verification_report: dict[str, Any] | None = None
+    """Bericht der Verification Engine zum Gesamtergebnis (siehe evaluation/)."""
     """Daraus erzeugter Kontextblock für die Prompts von Planner und Executor."""
     created_at: str = field(default_factory=utc_now)
     updated_at: str = field(default_factory=utc_now)
@@ -346,6 +353,7 @@ class Task:
             else None,
             recalled_memories=list(data.get("recalled_memories", [])),
             memory_context=str(data.get("memory_context", "")),
+            verification_report=data.get("verification_report"),
             created_at=data.get("created_at", utc_now()),
             updated_at=data.get("updated_at", utc_now()),
         )

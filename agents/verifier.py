@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import ast
 import asyncio
-import sys
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -36,7 +35,8 @@ from agents.task import (
     VerificationRecord,
     VerificationSpec,
 )
-from tools.base import ToolContext, ToolError, safe_environment, sha256_text
+from tools.base import ToolContext, ToolError, sha256_text
+from tools.process import run_process
 
 DEFAULT_ALLOWED_COMMANDS: tuple[tuple[str, ...], ...] = (
     ("python", "-m", "pytest"),
@@ -283,31 +283,24 @@ class Verifier:
     async def _run_command(
         self, command: Sequence[str], expect_exit: int, timeout_s: float
     ) -> CheckOutcome:
-        argv = [sys.executable if command[0] == "python" else command[0], *command[1:]]
         try:
-            proc = await asyncio.create_subprocess_exec(
-                *argv,
-                cwd=self.workspace,
-                env=safe_environment(),
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.STDOUT,
+            result = await run_process(
+                command,
+                self.workspace,
+                timeout_s=timeout_s,
+                max_output_bytes=self.max_output_chars * 20,
             )
-        except OSError as exc:
+        except ToolError as exc:
             return _failed(f"Befehl nicht startbar: {exc}")
-        try:
-            stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=timeout_s)
-        except TimeoutError:
-            proc.kill()
-            await proc.wait()
-            return _failed(f"Zeitlimit {timeout_s:.0f}s überschritten: {' '.join(command)}")
-        output = stdout.decode("utf-8", errors="replace").strip()
-        tail = output[-self.max_output_chars :]
         label = " ".join(command)
-        if proc.returncode == expect_exit:
-            return _passed(f"{label} → exit {proc.returncode}\n{tail[-500:]}")
-        if proc.returncode == _PYTEST_NO_TESTS and "pytest" in command:
+        if result.timed_out:
+            return _failed(f"Zeitlimit {timeout_s:.0f}s überschritten: {label}")
+        tail = result.output.strip()[-self.max_output_chars :]
+        if result.exit_code == expect_exit:
+            return _passed(f"{label} → exit {result.exit_code}\n{tail[-500:]}")
+        if result.exit_code == _PYTEST_NO_TESTS and "pytest" in command:
             return _unverified(f"{label}: keine Tests gefunden – nichts verifiziert\n{tail[-500:]}")
-        return _failed(f"{label} → exit {proc.returncode} (erwartet {expect_exit})\n{tail}")
+        return _failed(f"{label} → exit {result.exit_code} (erwartet {expect_exit})\n{tail}")
 
     async def _command(self, params: Mapping[str, Any], ctx: VerifyContext) -> CheckOutcome:
         command = params["command"]

@@ -12,18 +12,13 @@
 
 from __future__ import annotations
 
-import asyncio
-import contextlib
-import os
 import shlex
-import signal
-import sys
-import time
 from collections.abc import Mapping, Sequence
 from pathlib import PurePath
 from typing import Any, ClassVar
 
-from tools.base import Permission, Tool, ToolContext, ToolError, ToolResult, safe_environment
+from tools.base import Permission, Tool, ToolContext, ToolError, ToolResult
+from tools.process import run_process
 
 DEFAULT_ALLOWLIST: tuple[tuple[str, ...], ...] = (
     ("python", "-m", "pytest"),
@@ -203,26 +198,6 @@ def classify(argv: Sequence[str], allowlist: Sequence[Sequence[str]]) -> frozens
     return frozenset({Permission.EXECUTE})
 
 
-async def _read_limited(stream: asyncio.StreamReader, limit: int) -> tuple[bytes, int]:
-    """Liest bis EOF, behält aber höchstens ``limit`` Bytes (Rest wird verworfen, damit der
-    Prozess nicht an einer vollen Pipe hängen bleibt)."""
-    kept = bytearray()
-    total = 0
-    while chunk := await stream.read(65536):
-        total += len(chunk)
-        if len(kept) < limit:
-            kept += chunk[: limit - len(kept)]
-    return bytes(kept), total
-
-
-def _kill_group(proc: asyncio.subprocess.Process) -> None:
-    with contextlib.suppress(ProcessLookupError):
-        if hasattr(os, "killpg"):
-            os.killpg(proc.pid, signal.SIGKILL)
-        else:  # pragma: no cover – Windows
-            proc.kill()
-
-
 class ExecuteCommandTool(Tool):
     name = "execute_command"
     description = (
@@ -283,54 +258,23 @@ class ExecuteCommandTool(Tool):
         cwd = ctx.resolve(str(args.get("cwd", ".")))
         if not cwd.is_dir():
             raise ToolError(f"Arbeitsverzeichnis existiert nicht: {args.get('cwd')}")
-        if _exe(argv) == "python":
-            argv = [sys.executable, *argv[1:]]
         timeout = self._timeout(args)
-        started = time.perf_counter()
-        try:
-            proc = await asyncio.create_subprocess_exec(
-                *argv,
-                cwd=cwd,
-                env=safe_environment(),
-                stdin=asyncio.subprocess.DEVNULL,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.STDOUT,
-                start_new_session=True,
-            )
-        except FileNotFoundError:
-            raise ToolError(f"Programm nicht gefunden: {argv[0]}") from None
-        except PermissionError:
-            raise ToolError(f"Programm nicht ausführbar: {argv[0]}") from None
-
-        assert proc.stdout is not None
-        timed_out = False
-        try:
-            data, total = await asyncio.wait_for(
-                _read_limited(proc.stdout, self.max_output_bytes), timeout
-            )
-            await asyncio.wait_for(proc.wait(), timeout=5)
-        except TimeoutError:
-            timed_out = True
-            _kill_group(proc)
-            await proc.wait()
-            data, total = b"", 0
-        duration = round(time.perf_counter() - started, 3)
-        text = data.decode("utf-8", errors="replace")
+        result = await run_process(
+            argv, cwd, timeout_s=timeout, max_output_bytes=self.max_output_bytes
+        )
         meta: dict[str, Any] = {
-            "command": argv[:1] + list(argv[1:]),
+            "command": list(result.argv),
             "cwd": ctx.display(cwd),
-            "exit_code": None if timed_out else proc.returncode,
-            "duration_s": duration,
-            "output_bytes": total,
-            "truncated": total > self.max_output_bytes,
+            "exit_code": result.exit_code,
+            "duration_s": result.duration_s,
+            "output_bytes": result.output_bytes,
+            "truncated": result.truncated,
         }
-        if timed_out:
+        if result.timed_out:
             return ToolResult.fail(
                 f"Zeitlimit {timeout:.0f}s überschritten – Prozess beendet", **meta
             )
-        if total > self.max_output_bytes:
-            text += f"\n…[Ausgabe gekürzt: {total} Bytes gesamt]"
-        if proc.returncode == 0:
-            return ToolResult.ok(text, **meta)
+        if result.exit_code == 0:
+            return ToolResult.ok(result.output, **meta)
         # Bei Fehlschlag ist die Ausgabe (z. B. Testfehler) für die Analyse entscheidend.
-        return ToolResult.fail(f"Exit-Code {proc.returncode}", stdout=text, **meta)
+        return ToolResult.fail(f"Exit-Code {result.exit_code}", stdout=result.output, **meta)

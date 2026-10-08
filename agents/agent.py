@@ -33,6 +33,14 @@ from agents.task import (
     Verdict,
 )
 from agents.verifier import Verifier
+from evaluation.verifier import (
+    CheckStatus,
+    ToolEvent,
+    VerificationContext,
+    VerificationEngine,
+    VerificationReport,
+)
+from evaluation.verifier import Verdict as EngineVerdict
 from memory.base import MemoryStoreError
 from memory.memory_manager import MemoryManager
 from memory.project_memory import project_id_for
@@ -67,6 +75,7 @@ class Agent:
         executor: Executor | None = None,
         verifier: Verifier | None = None,
         failure_analyzer: FailureAnalyzer | None = None,
+        verification: VerificationEngine | None = None,
         on_event: EventHandler | None = None,
         memory: MemoryManager | None = None,
         session_id: str | None = None,
@@ -86,6 +95,7 @@ class Agent:
         self.executor = executor or Executor(engine, tools, self.workspace)
         self.failure_analyzer = failure_analyzer or FailureAnalyzer(engine)
         self.on_event = on_event
+        self.verification = verification or VerificationEngine()
         self.memory = memory
         self.session_id = session_id
         self.project_id = project_id or (project_id_for(self.workspace) if memory else None)
@@ -383,9 +393,68 @@ class Agent:
             return FinalStatus.PARTIAL, unverified, failed
         return (FinalStatus.UNVERIFIED if unverified else FinalStatus.SUCCESS), unverified, failed
 
+    def _verification_context(self, task: Task) -> VerificationContext:
+        done = [s for s in task.subtasks if s.status == SubtaskStatus.DONE and not s.superseded]
+        claim = "\n\n".join(s.output for s in done if s.output)
+        artifacts = list(
+            dict.fromkeys(
+                str(r.arguments.get("path"))
+                for r in task.tool_results
+                if r.success and r.tool in ("write_file", "edit_file") and r.arguments.get("path")
+            )
+        )
+        return VerificationContext(
+            workspace=self.workspace,
+            task=task.objective,
+            claim=claim,
+            artifacts=artifacts,
+            tool_events=[
+                ToolEvent(r.tool, r.arguments, r.success, r.metadata) for r in task.tool_results
+            ],
+            requirements=list(task.constraints.notes),
+            test_command=task.constraints.test_command,
+            reported_errors=len(task.errors),
+        )
+
+    async def _verify_result(self, task: Task) -> VerificationReport | None:
+        """Unabhängige Prüfung des Gesamtergebnisses – die Antwort des Modells ist nur
+        Prüfgegenstand."""
+        strategy = task.constraints.verification_strategy
+        if strategy == "none" or not any(s.status == SubtaskStatus.DONE for s in task.subtasks):
+            return None
+        try:
+            report = await self.verification.verify(self._verification_context(task), strategy)
+        except Exception as exc:
+            task.record_error(Phase.FINALIZE, "verification", f"Verification Engine: {exc}")
+            return None
+        task.verification_report = report.to_dict()
+        for result in report.results:
+            if result.status == CheckStatus.FAILED:
+                task.record_error(
+                    Phase.FINALIZE, "verification", f"{result.check}: {result.detail}"
+                )
+        task.observe("verifier", report.summary())
+        return report
+
     async def _finalize(self, task: Task, *, aborted: bool) -> None:
         await self._enter(task, Phase.FINALIZE, "Ergebnis wird zusammengefasst")
         status, unverified, failed = self._determine_status(task, aborted)
+        report = await self._verify_result(task)
+        if report is not None:
+            subtask_failed = any(
+                s.verdict == Verdict.FAILED and not s.superseded
+                for s in task.subtasks
+                if s.status == SubtaskStatus.DONE
+            )
+            if report.verdict == EngineVerdict.FAILED and status != FinalStatus.ABORTED:
+                status = FinalStatus.FAILED
+            elif (
+                report.verdict == EngineVerdict.PASSED
+                and status == FinalStatus.UNVERIFIED
+                and not subtask_failed
+            ):
+                status = FinalStatus.SUCCESS  # Gesamtergebnis unabhängig bestätigt
+                unverified = []
         done = [s for s in task.subtasks if s.status == SubtaskStatus.DONE]
         summary = (
             f"Status: {status.value}. {len(done)} Teilaufgabe(n) erledigt, davon "
@@ -393,6 +462,11 @@ class Agent:
             + (f"; nicht verifiziert: {', '.join(unverified)}" if unverified else "")
             + (f"; fehlgeschlagen/offen: {', '.join(failed)}" if failed else "")
             + f". Fehler im Verlauf: {len(task.errors)}."
+            + (
+                f" Unabhängige Gesamtprüfung ({report.strategy}): {report.verdict.value}."
+                if report is not None
+                else ""
+            )
         )
         answer = await self._synthesize(task, status, summary)
         task.final_result = FinalResult(
@@ -402,6 +476,7 @@ class Agent:
             summary=summary,
             unverified_subtasks=unverified,
             failed_subtasks=failed,
+            quality=report.quality.to_dict() if report is not None else None,
         )
         task.status = {
             FinalStatus.SUCCESS: TaskStatus.COMPLETED,

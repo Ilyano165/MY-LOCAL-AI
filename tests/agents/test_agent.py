@@ -23,7 +23,7 @@ TEST = "from calc import add\n\n\ndef test_add():\n    assert add(2, 3) == 5\n"
 
 def build(tmp_path: Path, provider: ScriptedProvider) -> tuple[Agent, Path, list[tuple[str, str]]]:
     workspace = tmp_path / "ws"
-    workspace.mkdir()
+    workspace.mkdir(parents=True)
     events: list[tuple[str, str]] = []
     agent = Agent(
         engine_for(provider),
@@ -36,16 +36,25 @@ def build(tmp_path: Path, provider: ScriptedProvider) -> tuple[Agent, Path, list
 
 
 async def test_simple_question_is_answered_but_marked_unverified(tmp_path: Path) -> None:
-    provider = ScriptedProvider(execute=["4"])
+    provider = ScriptedProvider(
+        execute=[
+            "Rekursion heißt, dass eine Funktion sich selbst aufruft. "
+            "Sie braucht eine Abbruchbedingung."
+        ]
+    )
     agent, _, events = build(tmp_path, provider)
-    task = await agent.run("Was ist 2+2?")
+    task = await agent.run("Erkläre kurz Rekursion")
 
     assert task.status == TaskStatus.COMPLETED
     assert task.final_result is not None
+    # Nichts unabhängig prüfbar → ehrlich „unverified“, auch wenn kein Widerspruch gefunden wurde
     assert task.final_result.status == FinalStatus.UNVERIFIED
     assert task.final_result.verified is False
-    assert task.final_result.answer == "4"
+    assert task.verification_report is not None
+    assert task.verification_report["verdict"] == "unverified"
     assert "plan" not in provider.requests  # einfacher Task: kein Planungsaufruf
+    assert task.final_result.quality is not None
+    assert "keine Wahrscheinlichkeit" in task.final_result.quality["disclaimer"]
     assert provider.requests["execute"][0].tools == ()  # Wissensfrage: keine Tools angeboten
     assert [p for p, _ in events][:2] == ["analyze", "plan"]
     assert events[-1][0] == "finalize"
@@ -306,3 +315,28 @@ def test_workspace_must_exist(tmp_path: Path) -> None:
             JsonFileTaskStore(tmp_path),
             tmp_path / "nope",
         )
+
+
+async def test_math_answer_is_recomputed_independently(tmp_path: Path) -> None:
+    right, _, _ = build(tmp_path / "a", ScriptedProvider(execute=["17 * 23 = 391"]))
+    task = await right.run("Was ist 17 * 23?")
+    assert task.final_result is not None and task.final_result.status == FinalStatus.SUCCESS
+    assert task.final_result.verified is True
+
+    wrong, _, _ = build(tmp_path / "b", ScriptedProvider(execute=["17 * 23 = 381"]))
+    task = await wrong.run("Was ist 17 * 23?")
+    assert task.final_result is not None and task.final_result.status == FinalStatus.FAILED
+    assert any(e.kind == "verification" and "391" in e.message for e in task.errors)
+
+
+async def test_verification_strategy_can_be_disabled_or_forced(tmp_path: Path) -> None:
+    off, _, _ = build(tmp_path / "a", ScriptedProvider(execute=["17 * 23 = 381"]))
+    task = await off.run("Was ist 17 * 23?", Constraints(verification_strategy="none"))
+    assert task.verification_report is None
+    assert task.final_result is not None and task.final_result.status == FinalStatus.UNVERIFIED
+
+    forced, _, _ = build(tmp_path / "b", ScriptedProvider(execute=["Kurze Antwort ohne Quelle."]))
+    task = await forced.run("Erkläre Photosynthese", Constraints(verification_strategy="research"))
+    assert task.verification_report is not None
+    assert task.verification_report["strategy"] == "research"
+    assert task.final_result is not None and task.final_result.status == FinalStatus.FAILED

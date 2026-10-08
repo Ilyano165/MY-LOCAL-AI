@@ -10,6 +10,14 @@ Ohne Messung ist jede Verbesserung eine Vermutung. NOVA trennt strikt:
 
 ---
 
+## 0. Umsetzungsstand (2026-10-08)
+
+Die **Verification Engine** (`evaluation/`, siehe `evaluation/README.md`) prüft Agent-Ergebnisse
+unabhängig (Code ausführen, nachrechnen, Quellen abgleichen, Anforderungen zählen) und liefert
+einen internen Quality Score. Sie ist in den Agenten integriert (FINALIZE) und wird über einen
+eigenen Benchmark mit False-Accept-Gate abgesichert. Noch offen: Eval-Suites für den
+*Agenten* mit echtem Modell (E2/E3) und Kalibrierung des Quality Scores gegen menschliche Urteile.
+
 ## 1. Ebenen
 
 | Ebene | Was wird gemessen | Beispiele für Metriken | Ab Phase |

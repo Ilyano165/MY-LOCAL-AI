@@ -98,6 +98,11 @@ implementieren → Tests → Fehler beheben → dokumentieren.
 
 ## Phase 8 – Evaluation-Ausbau
 
+> **Stand 2026-10-08: Verification Engine umgesetzt** (`evaluation/`): Strategien code/files/
+> research/math/text, unabhängige Checks, Urteilsregel ohne Vertrauen in Agent-Behauptungen,
+> Quality Score (intern, keine Wahrscheinlichkeit), Engine-Benchmark mit False-Accept-Gate,
+> Agent-Integration. Offen: Agent-Eval-Suites mit echtem Modell, Vergleichsreports, Kalibrierung.
+
 - Eval-Runner, Reports (Markdown/HTML), Vergleich zwischen Läufen, Regression-Gate
 - Modellvergleich: dieselbe Suite gegen verschiedene Modelle/Router-Konfigurationen
 - Optional: lokaler LLM-Judge mit kalibrierter Rubrik

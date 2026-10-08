@@ -106,13 +106,16 @@ async def test_verified_outcome_and_lesson_are_recorded(
         "Implementiere add in calc.py und dann teste es", Constraints(test_command=PYTEST)
     )
     assert task.final_result is not None
-    assert task.final_result.status == FinalStatus.UNVERIFIED  # s2 ohne Prüfung
+    # s2 hatte keine eigene Prüfung, aber die Gesamtprüfung (Syntax, Typen, Tests) bestätigt
+    assert task.final_result.status == FinalStatus.SUCCESS
+    assert task.verification_report is not None
+    assert task.verification_report["strategy"] == "code"
 
     ctx = MemoryContext(project_id=agent.project_id)
-    kinds = {i.kind for i in await memory.list(MemoryLayer.PROJECT, ctx)}
-    assert MemoryKind.TASK_RESULT in kinds
-    # Nicht vollständig verifiziert → keine Lehren übernommen
-    assert MemoryKind.LESSON not in kinds
+    items = await memory.list(MemoryLayer.PROJECT, ctx)
+    assert MemoryKind.TASK_RESULT in {i.kind for i in items}
+    lessons = [i.content for i in items if i.kind == MemoryKind.LESSON]
+    assert lessons == ["Nach der Funktionssignatur fehlte der Doppelpunkt."]
     assert await memory.list(MemoryLayer.WORKING, MemoryContext(task_id=task.id)) == []
 
 
@@ -134,3 +137,35 @@ def test_project_id_defaults_to_workspace(tmp_path: Path, memory: MemoryManager)
         engine_for(ScriptedProvider()), ToolRegistry(), InMemoryTaskStore(), agent.workspace
     )
     assert no_memory.project_id is None
+
+
+async def test_unverified_outcome_records_no_lesson(tmp_path: Path, memory: MemoryManager) -> None:
+    provider = ScriptedProvider(
+        plan=[
+            plan_json(
+                {
+                    "id": "s1",
+                    "description": "notes.md anlegen",
+                    "verification": [{"type": "file_contains", "path": "notes.md", "text": "Nova"}],
+                },
+                {"id": "s2", "description": "Fertig melden"},
+            )
+        ],
+        execute=[
+            [("write_file", {"path": "notes.md", "content": "leer"})],
+            "fertig",
+            [("write_file", {"path": "notes.md", "content": "Nova"})],
+            "korrigiert",
+            "gemeldet",
+        ],
+        analyze=["Das Wort Nova fehlte."],
+        final=["Erledigt."],
+    )
+    agent = build(tmp_path, provider, memory)
+    task = await agent.run(
+        "Lege notes.md an und dann melde dich", Constraints(verification_strategy="none")
+    )
+    assert task.final_result is not None
+    assert task.final_result.status == FinalStatus.UNVERIFIED  # s2 ohne Prüfung, Engine aus
+    items = await memory.list(MemoryLayer.PROJECT, MemoryContext(project_id=agent.project_id))
+    assert MemoryKind.LESSON not in {i.kind for i in items}
