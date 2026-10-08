@@ -354,6 +354,20 @@ vom Zielbild oben, bewusst und revidierbar:
   wird nur noch die Klassifikation Aufgabe→`TaskRequirements` liefern.
 - Streaming und exakte Token-Zählung sind noch nicht implementiert.
 
+### 6.11 Umsetzungsstand Agent Core (2026-10-08)
+
+Implementiert in `agents/` (siehe `agents/README.md`) mit Minimal-Tool-System in `tools/`.
+Abweichungen/Präzisierungen gegenüber §6.7–§6.8 und §9:
+
+- Der Task State (`agents/task.py`) ersetzt `AgentTask`/`AgentResult`: ein persistentes Objekt
+  für den gesamten Lauf, nach jedem Phasenwechsel atomar gespeichert, per `resume` fortsetzbar.
+- ANALYZE ist deterministisch (`HeuristicTaskAnalyzer`); einfache Aufgaben überspringen das
+  Planungsmodell.
+- Verifikation Stufe 1–2 aus §9 ist umgesetzt; modellbasierte Kritik (Stufe 4) bewusst noch nicht –
+  nicht prüfbare Ergebnisse werden als `unverified` ausgewiesen statt per LLM „abgesegnet“.
+- Noch offen: ContextManager mit Token-Budget (derzeit feste Zeichenlimits), Memory/RAG-Anbindung,
+  Streaming-Events an eine UI (derzeit synchroner `on_event`-Callback).
+
 ## 7. Agent-Laufzeit (Request-Lebenszyklus)
 
 ```

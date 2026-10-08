@@ -58,6 +58,12 @@ implementieren → Tests → Fehler beheben → dokumentieren.
 
 ## Phase 5 – Agent-Kern (erster nutzbarer Agent)
 
+> **Stand 2026-10-08: Kern umgesetzt** (vorgezogen): Agent-Loop ANALYZE→…→FINALIZE mit
+> persistentem Task State, Planner (JSON, Retry, Replan), Executor (Tool-Loop), Verifier
+> (deterministisch + automatische Checks nach Dateiänderungen), Korrekturkaskade, Budgets.
+> Minimal-Tools `read_file`/`write_file`/`list_dir`. Offen: ContextManager mit Token-Budget,
+> CLI, Eval-Suite mit echtem Modell.
+
 - Agent-Loop mit Budget, Schleifenerkennung, Abbruchstatus
 - `ContextManager` (Budgetierung, Kürzung, Zusammenfassung)
 - `Planner` (strukturierter Plan, Replan)

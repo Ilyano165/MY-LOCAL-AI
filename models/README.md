@@ -17,7 +17,9 @@ hardcodierten Modellnamen (erzwungen durch `tests/test_no_hardcoded_models.py`).
 
 ```python
 engine = InferenceEngine.from_toml("~/.nova/models.toml")
-result = await engine.chat(ChatRequest(messages=(Message.user("…"),)), task=TaskType.CODING, fallback=True)
+result = await engine.chat(
+    ChatRequest(messages=(Message.user("…"),)), task=TaskType.CODING, fallback=True
+)
 ```
 
 Health Check: `python -m scripts.model_health --config ~/.nova/models.toml`

@@ -3,7 +3,7 @@
 Vollständig lokale, persönliche KI-Plattform: lokales Open-Weight-Modell + Model Router +
 Planung + Tools + Memory + RAG + Context Management + Self-Verification + Evaluation + UI.
 
-**Status:** Phase 0 abgeschlossen; Model-Engine-Layer (`models/`) implementiert und getestet.
+**Status:** Phase 0 abgeschlossen; Model-Engine-Layer (`models/`) und Agent Core (`agents/`, Minimal-`tools/`) implementiert und getestet.
 
 ## Entwicklung
 
