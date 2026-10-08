@@ -132,6 +132,7 @@ class Router(Protocol):
         success: bool,
         verdict: str | None = None,
         quality: float | None = None,
+        latency_ms: float | None = None,
     ) -> None: ...
 
 

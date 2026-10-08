@@ -1,0 +1,3842 @@
+{
+  "comparison": [
+    {
+      "router": "rule",
+      "scenario": "all_available",
+      "tasks": 46,
+      "routing_accuracy": 0.6222222222222222,
+      "acceptable_rate": 0.6666666666666666,
+      "verification_success": 0.6,
+      "avg_quality": 0.7205555555555556,
+      "avg_latency_s": 60.312,
+      "avg_utility": 0.685361674074074,
+      "critical_violations": 1,
+      "routing_failures": 0,
+      "fallback_rate": 0.0,
+      "guard_interventions": 0,
+      "ranker_unavailable": 0
+    },
+    {
+      "router": "rule",
+      "scenario": "degraded",
+      "tasks": 46,
+      "routing_accuracy": 0.6666666666666666,
+      "acceptable_rate": 0.7111111111111111,
+      "verification_success": 0.5555555555555556,
+      "avg_quality": 0.7050000000000001,
+      "avg_latency_s": 60.312,
+      "avg_utility": 0.6675838962962963,
+      "critical_violations": 1,
+      "routing_failures": 0,
+      "fallback_rate": 0.24444444444444444,
+      "guard_interventions": 0,
+      "ranker_unavailable": 0
+    },
+    {
+      "router": "learned",
+      "scenario": "all_available",
+      "tasks": 46,
+      "routing_accuracy": 0.4888888888888889,
+      "acceptable_rate": 0.9333333333333333,
+      "verification_success": 0.8666666666666667,
+      "avg_quality": 0.8572222222222223,
+      "avg_latency_s": 73.92313333333334,
+      "avg_utility": 0.8252421629629629,
+      "critical_violations": 0,
+      "routing_failures": 0,
+      "fallback_rate": 0.0,
+      "guard_interventions": 0,
+      "ranker_unavailable": 0
+    },
+    {
+      "router": "learned",
+      "scenario": "degraded",
+      "tasks": 46,
+      "routing_accuracy": 0.4222222222222222,
+      "acceptable_rate": 0.9333333333333333,
+      "verification_success": 0.8,
+      "avg_quality": 0.8338888888888889,
+      "avg_latency_s": 86.46942222222222,
+      "avg_utility": 0.7944203111111111,
+      "critical_violations": 0,
+      "routing_failures": 0,
+      "fallback_rate": 0.4444444444444444,
+      "guard_interventions": 0,
+      "ranker_unavailable": 0
+    }
+  ],
+  "offline_simulated": {
+    "groups": 83,
+    "pair_accuracy": 0.6943,
+    "top1_match": 0.4096,
+    "mean_selected_utility": 0.8179,
+    "mean_best_utility": 0.8267
+  },
+  "offline_routing_log": null,
+  "evaluator": {
+    "rule": [
+      {
+        "scenario": "all_available",
+        "tasks": 46,
+        "routing_score": 0.8467,
+        "category_accuracy": 0.7174,
+        "secondary_accuracy": 0.5,
+        "complexity_accuracy": 0.5217,
+        "critical_errors": 1,
+        "capability_violations": 1,
+        "unavailable_violations": 0,
+        "routing_failures": 0,
+        "correct_refusals": 1,
+        "major_errors": 12,
+        "over_provisioned": 2,
+        "fallback_rate": 0.0,
+        "fallback_coverage": 0.9778,
+        "failover_safety": 1.0,
+        "ece": 0.0478,
+        "brier": 0.1635,
+        "overconfident_errors": 1,
+        "latency": {
+          "mean_ms": 0.487,
+          "p50_ms": 0.419,
+          "p95_ms": 0.867,
+          "max_ms": 1.16
+        },
+        "calibration_bins": [
+          {
+            "low": 0.0,
+            "high": 0.6,
+            "count": 23,
+            "mean_confidence": 0.523913043478261,
+            "accuracy": 0.5652173913043478
+          },
+          {
+            "low": 0.6,
+            "high": 0.8,
+            "count": 5,
+            "mean_confidence": 0.67,
+            "accuracy": 0.6
+          },
+          {
+            "low": 0.8,
+            "high": 0.9,
+            "count": 6,
+            "mean_confidence": 0.8333333333333334,
+            "accuracy": 0.8333333333333334
+          },
+          {
+            "low": 0.9,
+            "high": 1.0,
+            "count": 12,
+            "mean_confidence": 0.9249999999999999,
+            "accuracy": 1.0
+          }
+        ]
+      },
+      {
+        "scenario": "degraded",
+        "tasks": 46,
+        "routing_score": 0.8533,
+        "category_accuracy": 0.7174,
+        "secondary_accuracy": 0.5,
+        "complexity_accuracy": 0.5217,
+        "critical_errors": 1,
+        "capability_violations": 1,
+        "unavailable_violations": 0,
+        "routing_failures": 0,
+        "correct_refusals": 1,
+        "major_errors": 11,
+        "over_provisioned": 2,
+        "fallback_rate": 0.2444,
+        "fallback_coverage": 0.8667,
+        "failover_safety": 1.0,
+        "ece": 0.0478,
+        "brier": 0.1635,
+        "overconfident_errors": 1,
+        "latency": {
+          "mean_ms": 0.455,
+          "p50_ms": 0.43,
+          "p95_ms": 0.751,
+          "max_ms": 0.827
+        },
+        "calibration_bins": [
+          {
+            "low": 0.0,
+            "high": 0.6,
+            "count": 23,
+            "mean_confidence": 0.523913043478261,
+            "accuracy": 0.5652173913043478
+          },
+          {
+            "low": 0.6,
+            "high": 0.8,
+            "count": 5,
+            "mean_confidence": 0.67,
+            "accuracy": 0.6
+          },
+          {
+            "low": 0.8,
+            "high": 0.9,
+            "count": 6,
+            "mean_confidence": 0.8333333333333334,
+            "accuracy": 0.8333333333333334
+          },
+          {
+            "low": 0.9,
+            "high": 1.0,
+            "count": 12,
+            "mean_confidence": 0.9249999999999999,
+            "accuracy": 1.0
+          }
+        ]
+      }
+    ],
+    "learned": [
+      {
+        "scenario": "all_available",
+        "tasks": 46,
+        "routing_score": 0.9228,
+        "category_accuracy": 0.7174,
+        "secondary_accuracy": 0.5,
+        "complexity_accuracy": 0.5217,
+        "critical_errors": 0,
+        "capability_violations": 0,
+        "unavailable_violations": 0,
+        "routing_failures": 0,
+        "correct_refusals": 1,
+        "major_errors": 1,
+        "over_provisioned": 17,
+        "fallback_rate": 0.0,
+        "fallback_coverage": 0.9778,
+        "failover_safety": 1.0,
+        "ece": 0.0478,
+        "brier": 0.1635,
+        "overconfident_errors": 0,
+        "latency": {
+          "mean_ms": 1.769,
+          "p50_ms": 1.604,
+          "p95_ms": 3.6,
+          "max_ms": 4.824
+        },
+        "calibration_bins": [
+          {
+            "low": 0.0,
+            "high": 0.6,
+            "count": 23,
+            "mean_confidence": 0.523913043478261,
+            "accuracy": 0.5652173913043478
+          },
+          {
+            "low": 0.6,
+            "high": 0.8,
+            "count": 5,
+            "mean_confidence": 0.67,
+            "accuracy": 0.6
+          },
+          {
+            "low": 0.8,
+            "high": 0.9,
+            "count": 6,
+            "mean_confidence": 0.8333333333333334,
+            "accuracy": 0.8333333333333334
+          },
+          {
+            "low": 0.9,
+            "high": 1.0,
+            "count": 12,
+            "mean_confidence": 0.9249999999999999,
+            "accuracy": 1.0
+          }
+        ]
+      },
+      {
+        "scenario": "degraded",
+        "tasks": 46,
+        "routing_score": 0.9293,
+        "category_accuracy": 0.7174,
+        "secondary_accuracy": 0.5,
+        "complexity_accuracy": 0.5217,
+        "critical_errors": 0,
+        "capability_violations": 0,
+        "unavailable_violations": 0,
+        "routing_failures": 0,
+        "correct_refusals": 1,
+        "major_errors": 0,
+        "over_provisioned": 17,
+        "fallback_rate": 0.4444,
+        "fallback_coverage": 0.8667,
+        "failover_safety": 1.0,
+        "ece": 0.0478,
+        "brier": 0.1635,
+        "overconfident_errors": 0,
+        "latency": {
+          "mean_ms": 1.442,
+          "p50_ms": 1.289,
+          "p95_ms": 3.131,
+          "max_ms": 3.253
+        },
+        "calibration_bins": [
+          {
+            "low": 0.0,
+            "high": 0.6,
+            "count": 23,
+            "mean_confidence": 0.523913043478261,
+            "accuracy": 0.5652173913043478
+          },
+          {
+            "low": 0.6,
+            "high": 0.8,
+            "count": 5,
+            "mean_confidence": 0.67,
+            "accuracy": 0.6
+          },
+          {
+            "low": 0.8,
+            "high": 0.9,
+            "count": 6,
+            "mean_confidence": 0.8333333333333334,
+            "accuracy": 0.8333333333333334
+          },
+          {
+            "low": 0.9,
+            "high": 1.0,
+            "count": 12,
+            "mean_confidence": 0.9249999999999999,
+            "accuracy": 1.0
+          }
+        ]
+      }
+    ]
+  },
+  "results": {
+    "rule/all_available": [
+      {
+        "task_id": "fast-002",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "fast-005",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "fast-006",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "fast-009",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "fast-014",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "fast-018",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "fast-021",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "fast-022",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "gen-002",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "gen-005",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "gen-009",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "gen-011",
+        "selected": "coder-large",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 6.3,
+          "hard_failure": false
+        },
+        "utility": 0.8979,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "gen-012",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "gen-015",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "gen-018",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "gen-021",
+        "selected": "general-mid",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 6.3,
+          "hard_failure": false
+        },
+        "utility": 0.8979,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "general-mid",
+        "notes": []
+      },
+      {
+        "task_id": "code-002",
+        "selected": "coder-large",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 48.3,
+          "hard_failure": false
+        },
+        "utility": 0.4839,
+        "best_utility": 0.4839,
+        "oracle": [
+          "coder-large",
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-003",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.2,
+          "latency_s": 22.05,
+          "hard_failure": false
+        },
+        "utility": 0.19265000000000002,
+        "best_utility": 0.8824416666666667,
+        "oracle": [
+          "coder-large"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "code-012",
+        "selected": "coder-large",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 59.55,
+          "hard_failure": false
+        },
+        "utility": 0.48015,
+        "best_utility": 0.48015,
+        "oracle": [
+          "coder-large",
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-015",
+        "selected": "coder-large",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 20.3,
+          "hard_failure": false
+        },
+        "utility": 0.8932333333333333,
+        "best_utility": 0.8932333333333333,
+        "oracle": [
+          "coder-large",
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-017",
+        "selected": "coder-large",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 20.3,
+          "hard_failure": false
+        },
+        "utility": 0.8932333333333333,
+        "best_utility": 0.8932333333333333,
+        "oracle": [
+          "coder-large",
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-018",
+        "selected": "general-mid",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 23.425,
+          "hard_failure": false
+        },
+        "utility": 0.8921916666666667,
+        "best_utility": 0.8921916666666667,
+        "oracle": [
+          "coder-large",
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "general-mid",
+        "notes": []
+      },
+      {
+        "task_id": "code-019",
+        "selected": "coder-large",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 20.3,
+          "hard_failure": false
+        },
+        "utility": 0.8932333333333333,
+        "best_utility": 0.8932333333333333,
+        "oracle": [
+          "coder-large",
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-023",
+        "selected": "coder-large",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 48.3,
+          "hard_failure": false
+        },
+        "utility": 0.8839,
+        "best_utility": 0.8839,
+        "oracle": [
+          "coder-large"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-030",
+        "selected": "reasoner-large",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 120.3,
+          "hard_failure": false
+        },
+        "utility": 0.4599,
+        "best_utility": 0.4839,
+        "oracle": [
+          "coder-large",
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "reasoner-large",
+        "notes": []
+      },
+      {
+        "task_id": "reas-004",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 8.633,
+          "hard_failure": false
+        },
+        "utility": 0.49712233333333333,
+        "best_utility": 0.8932333333333333,
+        "oracle": [
+          "coder-large",
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "reas-005",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.2,
+          "latency_s": 20.3,
+          "hard_failure": false
+        },
+        "utility": 0.19323333333333334,
+        "best_utility": 0.8599,
+        "oracle": [
+          "omni-large",
+          "reasoner-large"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "reas-008",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.2,
+          "latency_s": 20.3,
+          "hard_failure": false
+        },
+        "utility": 0.19323333333333334,
+        "best_utility": 0.8599,
+        "oracle": [
+          "omni-large",
+          "reasoner-large"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "reas-009",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.2,
+          "latency_s": 21.05,
+          "hard_failure": false
+        },
+        "utility": 0.19298333333333334,
+        "best_utility": 0.8582333333333334,
+        "oracle": [
+          "omni-large",
+          "reasoner-large"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "reas-010",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 8.633,
+          "hard_failure": false
+        },
+        "utility": 0.49712233333333333,
+        "best_utility": 0.8932333333333333,
+        "oracle": [
+          "coder-large",
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "reas-014",
+        "selected": "general-mid",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 48.3,
+          "hard_failure": false
+        },
+        "utility": 0.4839,
+        "best_utility": 0.8599,
+        "oracle": [
+          "omni-large",
+          "reasoner-large"
+        ],
+        "critical": [],
+        "reference": "general-mid",
+        "notes": []
+      },
+      {
+        "task_id": "reas-021",
+        "selected": "coder-large",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 48.3,
+          "hard_failure": false
+        },
+        "utility": 0.4839,
+        "best_utility": 0.8599,
+        "oracle": [
+          "omni-large",
+          "reasoner-large"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "reas-024",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 8.633,
+          "hard_failure": false
+        },
+        "utility": 0.49712233333333333,
+        "best_utility": 0.8932333333333333,
+        "oracle": [
+          "coder-large",
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "long-004",
+        "selected": "omni-large",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 416.967,
+          "hard_failure": false
+        },
+        "utility": 0.8,
+        "best_utility": 0.8,
+        "oracle": [
+          "longctx-mid",
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "long-008",
+        "selected": "omni-large",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.725,
+          "latency_s": 513.633,
+          "hard_failure": false
+        },
+        "utility": 0.4,
+        "best_utility": 0.4,
+        "oracle": [
+          "longctx-mid",
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "long-014",
+        "selected": "omni-large",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 403.633,
+          "hard_failure": false
+        },
+        "utility": 0.8,
+        "best_utility": 0.8,
+        "oracle": [
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "long-015",
+        "selected": "longctx-mid",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 303.633,
+          "hard_failure": false
+        },
+        "utility": 0.4,
+        "best_utility": 0.8609833333333333,
+        "oracle": [
+          "coder-large"
+        ],
+        "critical": [],
+        "reference": "longctx-mid",
+        "notes": []
+      },
+      {
+        "task_id": "long-017",
+        "selected": null,
+        "ranker": "-",
+        "outcome": null,
+        "utility": null,
+        "best_utility": null,
+        "oracle": [],
+        "critical": [],
+        "reference": null,
+        "notes": []
+      },
+      {
+        "task_id": "long-020",
+        "selected": "omni-large",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 210.3,
+          "hard_failure": false
+        },
+        "utility": 0.8299,
+        "best_utility": 0.8732333333333333,
+        "oracle": [
+          "coder-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "vis-002",
+        "selected": "vision-mid",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 6.3,
+          "hard_failure": false
+        },
+        "utility": 0.8979,
+        "best_utility": 0.8979,
+        "oracle": [
+          "vision-mid"
+        ],
+        "critical": [],
+        "reference": "vision-mid",
+        "notes": []
+      },
+      {
+        "task_id": "vis-004",
+        "selected": "vision-mid",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 20.3,
+          "hard_failure": false
+        },
+        "utility": 0.49323333333333336,
+        "best_utility": 0.8832333333333333,
+        "oracle": [
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "vision-mid",
+        "notes": []
+      },
+      {
+        "task_id": "vis-013",
+        "selected": "vision-mid",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.0,
+          "latency_s": 20.3,
+          "hard_failure": true
+        },
+        "utility": -0.006766666666666667,
+        "best_utility": 0.8832333333333333,
+        "oracle": [
+          "omni-large"
+        ],
+        "critical": [
+          "keine coding-Fähigkeit"
+        ],
+        "reference": "vision-mid",
+        "notes": []
+      },
+      {
+        "task_id": "vis-015",
+        "selected": "omni-large",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 50.3,
+          "hard_failure": false
+        },
+        "utility": 0.8832333333333333,
+        "best_utility": 0.8832333333333333,
+        "oracle": [
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "multi-004",
+        "selected": "coder-large",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 53.3,
+          "hard_failure": false
+        },
+        "utility": 0.8822333333333333,
+        "best_utility": 0.8822333333333333,
+        "oracle": [
+          "coder-large"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "multi-006",
+        "selected": "general-mid",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 48.3,
+          "hard_failure": false
+        },
+        "utility": 0.4839,
+        "best_utility": 0.8599,
+        "oracle": [
+          "omni-large",
+          "reasoner-large"
+        ],
+        "critical": [],
+        "reference": "general-mid",
+        "notes": []
+      },
+      {
+        "task_id": "multi-008",
+        "selected": "coder-large",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 48.3,
+          "hard_failure": false
+        },
+        "utility": 0.4839,
+        "best_utility": 0.4839,
+        "oracle": [
+          "coder-large",
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      }
+    ],
+    "rule/degraded": [
+      {
+        "task_id": "fast-002",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "fast-005",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "fast-006",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "fast-009",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "fast-014",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "fast-018",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "fast-021",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "fast-022",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "gen-002",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "gen-005",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "gen-009",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "gen-011",
+        "selected": "general-mid",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 6.3,
+          "hard_failure": false
+        },
+        "utility": 0.8979,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "gen-012",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "gen-015",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "gen-018",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 2.8,
+          "hard_failure": false
+        },
+        "utility": 0.8990666666666667,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "gen-021",
+        "selected": "general-mid",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 6.3,
+          "hard_failure": false
+        },
+        "utility": 0.8979,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "general-mid",
+        "notes": []
+      },
+      {
+        "task_id": "code-002",
+        "selected": "general-mid",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 48.3,
+          "hard_failure": false
+        },
+        "utility": 0.4839,
+        "best_utility": 0.4839,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-003",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.2,
+          "latency_s": 22.05,
+          "hard_failure": false
+        },
+        "utility": 0.19265000000000002,
+        "best_utility": 0.48244166666666666,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "code-012",
+        "selected": "general-mid",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 59.55,
+          "hard_failure": false
+        },
+        "utility": 0.48015,
+        "best_utility": 0.48015,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-015",
+        "selected": "general-mid",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 20.3,
+          "hard_failure": false
+        },
+        "utility": 0.8932333333333333,
+        "best_utility": 0.8932333333333333,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-017",
+        "selected": "general-mid",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 20.3,
+          "hard_failure": false
+        },
+        "utility": 0.8932333333333333,
+        "best_utility": 0.8932333333333333,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-018",
+        "selected": "general-mid",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 23.425,
+          "hard_failure": false
+        },
+        "utility": 0.8921916666666667,
+        "best_utility": 0.8921916666666667,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "general-mid",
+        "notes": []
+      },
+      {
+        "task_id": "code-019",
+        "selected": "general-mid",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 20.3,
+          "hard_failure": false
+        },
+        "utility": 0.8932333333333333,
+        "best_utility": 0.8932333333333333,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-023",
+        "selected": "general-mid",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 48.3,
+          "hard_failure": false
+        },
+        "utility": 0.4839,
+        "best_utility": 0.4839,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-030",
+        "selected": "reasoner-large",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 120.3,
+          "hard_failure": false
+        },
+        "utility": 0.4599,
+        "best_utility": 0.4839,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "reasoner-large",
+        "notes": []
+      },
+      {
+        "task_id": "reas-004",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 8.633,
+          "hard_failure": false
+        },
+        "utility": 0.49712233333333333,
+        "best_utility": 0.8932333333333333,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "reas-005",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.2,
+          "latency_s": 20.3,
+          "hard_failure": false
+        },
+        "utility": 0.19323333333333334,
+        "best_utility": 0.8599,
+        "oracle": [
+          "omni-large",
+          "reasoner-large"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "reas-008",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.2,
+          "latency_s": 20.3,
+          "hard_failure": false
+        },
+        "utility": 0.19323333333333334,
+        "best_utility": 0.8599,
+        "oracle": [
+          "omni-large",
+          "reasoner-large"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "reas-009",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.2,
+          "latency_s": 21.05,
+          "hard_failure": false
+        },
+        "utility": 0.19298333333333334,
+        "best_utility": 0.8582333333333334,
+        "oracle": [
+          "omni-large",
+          "reasoner-large"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "reas-010",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 8.633,
+          "hard_failure": false
+        },
+        "utility": 0.49712233333333333,
+        "best_utility": 0.8932333333333333,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "reas-014",
+        "selected": "general-mid",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 48.3,
+          "hard_failure": false
+        },
+        "utility": 0.4839,
+        "best_utility": 0.8599,
+        "oracle": [
+          "omni-large",
+          "reasoner-large"
+        ],
+        "critical": [],
+        "reference": "general-mid",
+        "notes": []
+      },
+      {
+        "task_id": "reas-021",
+        "selected": "general-mid",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 48.3,
+          "hard_failure": false
+        },
+        "utility": 0.4839,
+        "best_utility": 0.8599,
+        "oracle": [
+          "omni-large",
+          "reasoner-large"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "reas-024",
+        "selected": "fast-small",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 8.633,
+          "hard_failure": false
+        },
+        "utility": 0.49712233333333333,
+        "best_utility": 0.8932333333333333,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "fast-small",
+        "notes": []
+      },
+      {
+        "task_id": "long-004",
+        "selected": "omni-large",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 416.967,
+          "hard_failure": false
+        },
+        "utility": 0.8,
+        "best_utility": 0.8,
+        "oracle": [
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "long-008",
+        "selected": "omni-large",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.725,
+          "latency_s": 513.633,
+          "hard_failure": false
+        },
+        "utility": 0.4,
+        "best_utility": 0.4,
+        "oracle": [
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "long-014",
+        "selected": "omni-large",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 403.633,
+          "hard_failure": false
+        },
+        "utility": 0.8,
+        "best_utility": 0.8,
+        "oracle": [
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "long-015",
+        "selected": "omni-large",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 303.633,
+          "hard_failure": false
+        },
+        "utility": 0.4,
+        "best_utility": 0.4,
+        "oracle": [
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "longctx-mid",
+        "notes": []
+      },
+      {
+        "task_id": "long-017",
+        "selected": null,
+        "ranker": "-",
+        "outcome": null,
+        "utility": null,
+        "best_utility": null,
+        "oracle": [],
+        "critical": [],
+        "reference": null,
+        "notes": []
+      },
+      {
+        "task_id": "long-020",
+        "selected": "omni-large",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 210.3,
+          "hard_failure": false
+        },
+        "utility": 0.8299,
+        "best_utility": 0.8299,
+        "oracle": [
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "vis-002",
+        "selected": "vision-mid",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 6.3,
+          "hard_failure": false
+        },
+        "utility": 0.8979,
+        "best_utility": 0.8979,
+        "oracle": [
+          "vision-mid"
+        ],
+        "critical": [],
+        "reference": "vision-mid",
+        "notes": []
+      },
+      {
+        "task_id": "vis-004",
+        "selected": "vision-mid",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 20.3,
+          "hard_failure": false
+        },
+        "utility": 0.49323333333333336,
+        "best_utility": 0.8832333333333333,
+        "oracle": [
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "vision-mid",
+        "notes": []
+      },
+      {
+        "task_id": "vis-013",
+        "selected": "vision-mid",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.0,
+          "latency_s": 20.3,
+          "hard_failure": true
+        },
+        "utility": -0.006766666666666667,
+        "best_utility": 0.8832333333333333,
+        "oracle": [
+          "omni-large"
+        ],
+        "critical": [
+          "keine coding-Fähigkeit"
+        ],
+        "reference": "vision-mid",
+        "notes": []
+      },
+      {
+        "task_id": "vis-015",
+        "selected": "omni-large",
+        "ranker": "rules",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 50.3,
+          "hard_failure": false
+        },
+        "utility": 0.8832333333333333,
+        "best_utility": 0.8832333333333333,
+        "oracle": [
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "multi-004",
+        "selected": "general-mid",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 53.3,
+          "hard_failure": false
+        },
+        "utility": 0.48223333333333335,
+        "best_utility": 0.48223333333333335,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "multi-006",
+        "selected": "general-mid",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 48.3,
+          "hard_failure": false
+        },
+        "utility": 0.4839,
+        "best_utility": 0.8599,
+        "oracle": [
+          "omni-large",
+          "reasoner-large"
+        ],
+        "critical": [],
+        "reference": "general-mid",
+        "notes": []
+      },
+      {
+        "task_id": "multi-008",
+        "selected": "general-mid",
+        "ranker": "rules",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 48.3,
+          "hard_failure": false
+        },
+        "utility": 0.4839,
+        "best_utility": 0.4839,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      }
+    ],
+    "learned/all_available": [
+      {
+        "task_id": "fast-002",
+        "selected": "reasoner-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "reasoner-large",
+        "notes": []
+      },
+      {
+        "task_id": "fast-005",
+        "selected": "coder-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 6.3,
+          "hard_failure": false
+        },
+        "utility": 0.8979,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "fast-006",
+        "selected": "reasoner-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "reasoner-large",
+        "notes": []
+      },
+      {
+        "task_id": "fast-009",
+        "selected": "coder-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 6.3,
+          "hard_failure": false
+        },
+        "utility": 0.8979,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "fast-014",
+        "selected": "coder-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 6.3,
+          "hard_failure": false
+        },
+        "utility": 0.8979,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "fast-018",
+        "selected": "coder-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 6.3,
+          "hard_failure": false
+        },
+        "utility": 0.8979,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "fast-021",
+        "selected": "coder-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 6.3,
+          "hard_failure": false
+        },
+        "utility": 0.8979,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "fast-022",
+        "selected": "coder-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 6.3,
+          "hard_failure": false
+        },
+        "utility": 0.8979,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "gen-002",
+        "selected": "coder-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 6.3,
+          "hard_failure": false
+        },
+        "utility": 0.8979,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "gen-005",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "gen-009",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "gen-011",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "gen-012",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "gen-015",
+        "selected": "coder-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 6.3,
+          "hard_failure": false
+        },
+        "utility": 0.8979,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "gen-018",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "gen-021",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-002",
+        "selected": "coder-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 48.3,
+          "hard_failure": false
+        },
+        "utility": 0.4839,
+        "best_utility": 0.4839,
+        "oracle": [
+          "coder-large",
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-003",
+        "selected": "coder-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 52.675,
+          "hard_failure": false
+        },
+        "utility": 0.8824416666666667,
+        "best_utility": 0.8824416666666667,
+        "oracle": [
+          "coder-large"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-012",
+        "selected": "coder-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 59.55,
+          "hard_failure": false
+        },
+        "utility": 0.48015,
+        "best_utility": 0.48015,
+        "oracle": [
+          "coder-large",
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-015",
+        "selected": "coder-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 20.3,
+          "hard_failure": false
+        },
+        "utility": 0.8932333333333333,
+        "best_utility": 0.8932333333333333,
+        "oracle": [
+          "coder-large",
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-017",
+        "selected": "coder-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 20.3,
+          "hard_failure": false
+        },
+        "utility": 0.8932333333333333,
+        "best_utility": 0.8932333333333333,
+        "oracle": [
+          "coder-large",
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-018",
+        "selected": "reasoner-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 58.633,
+          "hard_failure": false
+        },
+        "utility": 0.8804556666666666,
+        "best_utility": 0.8921916666666667,
+        "oracle": [
+          "coder-large",
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "reasoner-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-019",
+        "selected": "coder-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 20.3,
+          "hard_failure": false
+        },
+        "utility": 0.8932333333333333,
+        "best_utility": 0.8932333333333333,
+        "oracle": [
+          "coder-large",
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-023",
+        "selected": "coder-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 48.3,
+          "hard_failure": false
+        },
+        "utility": 0.8839,
+        "best_utility": 0.8839,
+        "oracle": [
+          "coder-large"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-030",
+        "selected": "coder-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 48.3,
+          "hard_failure": false
+        },
+        "utility": 0.4839,
+        "best_utility": 0.4839,
+        "oracle": [
+          "coder-large",
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "reas-004",
+        "selected": "coder-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 20.3,
+          "hard_failure": false
+        },
+        "utility": 0.8932333333333333,
+        "best_utility": 0.8932333333333333,
+        "oracle": [
+          "coder-large",
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "reas-005",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 120.3,
+          "hard_failure": false
+        },
+        "utility": 0.8599,
+        "best_utility": 0.8599,
+        "oracle": [
+          "omni-large",
+          "reasoner-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "reas-008",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 120.3,
+          "hard_failure": false
+        },
+        "utility": 0.8599,
+        "best_utility": 0.8599,
+        "oracle": [
+          "omni-large",
+          "reasoner-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "reas-009",
+        "selected": "reasoner-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 125.3,
+          "hard_failure": false
+        },
+        "utility": 0.8582333333333334,
+        "best_utility": 0.8582333333333334,
+        "oracle": [
+          "omni-large",
+          "reasoner-large"
+        ],
+        "critical": [],
+        "reference": "reasoner-large",
+        "notes": []
+      },
+      {
+        "task_id": "reas-010",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 50.3,
+          "hard_failure": false
+        },
+        "utility": 0.8832333333333333,
+        "best_utility": 0.8932333333333333,
+        "oracle": [
+          "coder-large",
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "reas-014",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 120.3,
+          "hard_failure": false
+        },
+        "utility": 0.8599,
+        "best_utility": 0.8599,
+        "oracle": [
+          "omni-large",
+          "reasoner-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "reas-021",
+        "selected": "coder-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 48.3,
+          "hard_failure": false
+        },
+        "utility": 0.4839,
+        "best_utility": 0.8599,
+        "oracle": [
+          "omni-large",
+          "reasoner-large"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "reas-024",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 50.3,
+          "hard_failure": false
+        },
+        "utility": 0.8832333333333333,
+        "best_utility": 0.8932333333333333,
+        "oracle": [
+          "coder-large",
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "long-004",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 416.967,
+          "hard_failure": false
+        },
+        "utility": 0.8,
+        "best_utility": 0.8,
+        "oracle": [
+          "longctx-mid",
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "long-008",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": false,
+          "quality": 0.725,
+          "latency_s": 513.633,
+          "hard_failure": false
+        },
+        "utility": 0.4,
+        "best_utility": 0.4,
+        "oracle": [
+          "longctx-mid",
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "long-014",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 403.633,
+          "hard_failure": false
+        },
+        "utility": 0.8,
+        "best_utility": 0.8,
+        "oracle": [
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "long-015",
+        "selected": "coder-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 117.05,
+          "hard_failure": false
+        },
+        "utility": 0.8609833333333333,
+        "best_utility": 0.8609833333333333,
+        "oracle": [
+          "coder-large"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "long-017",
+        "selected": null,
+        "ranker": "-",
+        "outcome": null,
+        "utility": null,
+        "best_utility": null,
+        "oracle": [],
+        "critical": [],
+        "reference": null,
+        "notes": []
+      },
+      {
+        "task_id": "long-020",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 210.3,
+          "hard_failure": false
+        },
+        "utility": 0.8299,
+        "best_utility": 0.8732333333333333,
+        "oracle": [
+          "coder-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "vis-002",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8979,
+        "oracle": [
+          "vision-mid"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "vis-004",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 50.3,
+          "hard_failure": false
+        },
+        "utility": 0.8832333333333333,
+        "best_utility": 0.8832333333333333,
+        "oracle": [
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "vis-013",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 50.3,
+          "hard_failure": false
+        },
+        "utility": 0.8832333333333333,
+        "best_utility": 0.8832333333333333,
+        "oracle": [
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "vis-015",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 50.3,
+          "hard_failure": false
+        },
+        "utility": 0.8832333333333333,
+        "best_utility": 0.8832333333333333,
+        "oracle": [
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "multi-004",
+        "selected": "coder-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 53.3,
+          "hard_failure": false
+        },
+        "utility": 0.8822333333333333,
+        "best_utility": 0.8822333333333333,
+        "oracle": [
+          "coder-large"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "multi-006",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 120.3,
+          "hard_failure": false
+        },
+        "utility": 0.8599,
+        "best_utility": 0.8599,
+        "oracle": [
+          "omni-large",
+          "reasoner-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "multi-008",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 120.3,
+          "hard_failure": false
+        },
+        "utility": 0.4599,
+        "best_utility": 0.4839,
+        "oracle": [
+          "coder-large",
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      }
+    ],
+    "learned/degraded": [
+      {
+        "task_id": "fast-002",
+        "selected": "reasoner-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "reasoner-large",
+        "notes": []
+      },
+      {
+        "task_id": "fast-005",
+        "selected": "reasoner-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "fast-006",
+        "selected": "reasoner-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "reasoner-large",
+        "notes": []
+      },
+      {
+        "task_id": "fast-009",
+        "selected": "reasoner-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "fast-014",
+        "selected": "reasoner-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "fast-018",
+        "selected": "reasoner-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "fast-021",
+        "selected": "reasoner-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "fast-022",
+        "selected": "reasoner-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "gen-002",
+        "selected": "reasoner-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "gen-005",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "gen-009",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "gen-011",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "gen-012",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "gen-015",
+        "selected": "reasoner-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "gen-018",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "gen-021",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8990666666666667,
+        "oracle": [
+          "fast-small"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-002",
+        "selected": "general-mid",
+        "ranker": "learned",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 48.3,
+          "hard_failure": false
+        },
+        "utility": 0.4839,
+        "best_utility": 0.4839,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-003",
+        "selected": "general-mid",
+        "ranker": "learned",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 52.675,
+          "hard_failure": false
+        },
+        "utility": 0.48244166666666666,
+        "best_utility": 0.48244166666666666,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-012",
+        "selected": "general-mid",
+        "ranker": "learned",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 59.55,
+          "hard_failure": false
+        },
+        "utility": 0.48015,
+        "best_utility": 0.48015,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-015",
+        "selected": "reasoner-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 50.3,
+          "hard_failure": false
+        },
+        "utility": 0.8832333333333333,
+        "best_utility": 0.8932333333333333,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-017",
+        "selected": "reasoner-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 50.3,
+          "hard_failure": false
+        },
+        "utility": 0.8832333333333333,
+        "best_utility": 0.8932333333333333,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-018",
+        "selected": "reasoner-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 58.633,
+          "hard_failure": false
+        },
+        "utility": 0.8804556666666666,
+        "best_utility": 0.8921916666666667,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "reasoner-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-019",
+        "selected": "general-mid",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 20.3,
+          "hard_failure": false
+        },
+        "utility": 0.8932333333333333,
+        "best_utility": 0.8932333333333333,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-023",
+        "selected": "reasoner-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 120.3,
+          "hard_failure": false
+        },
+        "utility": 0.4599,
+        "best_utility": 0.4839,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "code-030",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 120.3,
+          "hard_failure": false
+        },
+        "utility": 0.4599,
+        "best_utility": 0.4839,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "reas-004",
+        "selected": "reasoner-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 50.3,
+          "hard_failure": false
+        },
+        "utility": 0.8832333333333333,
+        "best_utility": 0.8932333333333333,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "reas-005",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 120.3,
+          "hard_failure": false
+        },
+        "utility": 0.8599,
+        "best_utility": 0.8599,
+        "oracle": [
+          "omni-large",
+          "reasoner-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "reas-008",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 120.3,
+          "hard_failure": false
+        },
+        "utility": 0.8599,
+        "best_utility": 0.8599,
+        "oracle": [
+          "omni-large",
+          "reasoner-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "reas-009",
+        "selected": "reasoner-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 125.3,
+          "hard_failure": false
+        },
+        "utility": 0.8582333333333334,
+        "best_utility": 0.8582333333333334,
+        "oracle": [
+          "omni-large",
+          "reasoner-large"
+        ],
+        "critical": [],
+        "reference": "reasoner-large",
+        "notes": []
+      },
+      {
+        "task_id": "reas-010",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 50.3,
+          "hard_failure": false
+        },
+        "utility": 0.8832333333333333,
+        "best_utility": 0.8932333333333333,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "reas-014",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 120.3,
+          "hard_failure": false
+        },
+        "utility": 0.8599,
+        "best_utility": 0.8599,
+        "oracle": [
+          "omni-large",
+          "reasoner-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "reas-021",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 120.3,
+          "hard_failure": false
+        },
+        "utility": 0.8599,
+        "best_utility": 0.8599,
+        "oracle": [
+          "omni-large",
+          "reasoner-large"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "reas-024",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 50.3,
+          "hard_failure": false
+        },
+        "utility": 0.8832333333333333,
+        "best_utility": 0.8932333333333333,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "long-004",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 416.967,
+          "hard_failure": false
+        },
+        "utility": 0.8,
+        "best_utility": 0.8,
+        "oracle": [
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "long-008",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": false,
+          "quality": 0.725,
+          "latency_s": 513.633,
+          "hard_failure": false
+        },
+        "utility": 0.4,
+        "best_utility": 0.4,
+        "oracle": [
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "long-014",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 403.633,
+          "hard_failure": false
+        },
+        "utility": 0.8,
+        "best_utility": 0.8,
+        "oracle": [
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "long-015",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 303.633,
+          "hard_failure": false
+        },
+        "utility": 0.4,
+        "best_utility": 0.4,
+        "oracle": [
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "long-017",
+        "selected": null,
+        "ranker": "-",
+        "outcome": null,
+        "utility": null,
+        "best_utility": null,
+        "oracle": [],
+        "critical": [],
+        "reference": null,
+        "notes": []
+      },
+      {
+        "task_id": "long-020",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 210.3,
+          "hard_failure": false
+        },
+        "utility": 0.8299,
+        "best_utility": 0.8299,
+        "oracle": [
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "vis-002",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 15.3,
+          "hard_failure": false
+        },
+        "utility": 0.8949,
+        "best_utility": 0.8979,
+        "oracle": [
+          "vision-mid"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "vis-004",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 50.3,
+          "hard_failure": false
+        },
+        "utility": 0.8832333333333333,
+        "best_utility": 0.8832333333333333,
+        "oracle": [
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "vis-013",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 50.3,
+          "hard_failure": false
+        },
+        "utility": 0.8832333333333333,
+        "best_utility": 0.8832333333333333,
+        "oracle": [
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "vis-015",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 50.3,
+          "hard_failure": false
+        },
+        "utility": 0.8832333333333333,
+        "best_utility": 0.8832333333333333,
+        "oracle": [
+          "omni-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "multi-004",
+        "selected": "general-mid",
+        "ranker": "learned",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 53.3,
+          "hard_failure": false
+        },
+        "utility": 0.48223333333333335,
+        "best_utility": 0.48223333333333335,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "coder-large",
+        "notes": []
+      },
+      {
+        "task_id": "multi-006",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": true,
+          "quality": 0.9,
+          "latency_s": 120.3,
+          "hard_failure": false
+        },
+        "utility": 0.8599,
+        "best_utility": 0.8599,
+        "oracle": [
+          "omni-large",
+          "reasoner-large"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      },
+      {
+        "task_id": "multi-008",
+        "selected": "omni-large",
+        "ranker": "learned",
+        "outcome": {
+          "success": false,
+          "quality": 0.55,
+          "latency_s": 120.3,
+          "hard_failure": false
+        },
+        "utility": 0.4599,
+        "best_utility": 0.4839,
+        "oracle": [
+          "general-mid"
+        ],
+        "critical": [],
+        "reference": "omni-large",
+        "notes": []
+      }
+    ]
+  }
+}

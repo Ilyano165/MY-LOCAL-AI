@@ -234,6 +234,7 @@ class Agent:
                 success=task.final_result.status == FinalStatus.SUCCESS,
                 verdict=task.final_result.status.value,
                 quality=quality,
+                latency_ms=task.routing_latency_ms.get(decision_id),
             )
 
     async def _store_outcome(self, task: Task) -> None:

@@ -160,6 +160,10 @@ class Executor:
                 outcome.errors.append(message)
                 return outcome
 
+            if result.routing_id:
+                task.routing_latency_ms[result.routing_id] = (
+                    task.routing_latency_ms.get(result.routing_id, 0.0) + result.response.latency_ms
+                )
             if result.routing_id and result.routing_id not in task.routing_ids:
                 task.routing_ids.append(result.routing_id)
                 task.observe(

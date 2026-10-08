@@ -355,12 +355,14 @@ class ModelProfile:
         notes: list[str] = []
         same_hw = hardware_fingerprint is None or hardware_fingerprint == self.hardware_fingerprint
         tps: float | None = None
+        latency: float | None = None
         if same_hw:
             tps_m = self.perf("tokens_per_second")
             tps = tps_m.number()
             if tps is not None:
                 values["speed"] = tokens_per_second_to_speed(tps)
                 sources["speed"] = f"{tps_m.status.value}: {tps:.1f} tok/s ({tps_m.method})"
+            latency = self.perf("first_token_latency").number()
             footprint = self.perf("memory_footprint")
             if (gb := footprint.number()) is not None and gb > 0:
                 values["memory_requirement"] = round(gb, 2)
@@ -392,6 +394,7 @@ class ModelProfile:
             status,
             source=source,
             tokens_per_second=tps,
+            latency_s=latency,
             notes=tuple(notes),
             field_sources=sources,
             **values,

@@ -25,6 +25,7 @@ Jede Entscheidung wird mit Begründung, abgelehnten Kandidaten und Fallbacks pro
 from __future__ import annotations
 
 from collections.abc import Sequence
+from dataclasses import dataclass, field
 
 from models.capabilities import CapabilityLevel, ModelMetadata, TaskType
 from models.measured import DataStatus, MeasuredOverrides
@@ -55,6 +56,29 @@ _CAP_LABEL = {
     TaskType.GENERAL: "Allround",
     TaskType.FAST: "Allround",
 }
+
+
+@dataclass
+class CandidateSet:
+    """Ergebnis der harten Regeln: nur diese Modelle dürfen gerankt werden."""
+
+    classification: TaskClassification
+    candidates: list[ModelMetadata]
+    rejected: list[Rejection]
+    placements: dict[str, str]
+    data: dict[str, MeasuredOverrides]
+    availability: dict[str, Availability]
+
+
+@dataclass
+class Ranking:
+    ranked: list[ModelMetadata]
+    """Gültige Kandidaten, bester zuerst (nie leer)."""
+    ranker: str
+    scores: dict[str, float] = field(default_factory=dict)
+    notes: list[str] = field(default_factory=list)
+    reason: str = ""
+    """Eigene Begründung des Rankers; leer = Regelbegründung."""
 
 
 def capability(model: ModelMetadata, task_type: TaskType) -> float:
@@ -89,6 +113,41 @@ class RuleBasedRouter(ModelRouter):
 
     async def route(self, request: RoutingRequest) -> RoutingDecision:
         classification = await self.classifier.classify(request)
+        stage = await self.candidates(request, classification)
+        ranking = self.rank(stage, request)
+        ranked = ranking.ranked
+        selected = ranked[0]
+        data = stage.data
+        notes = self._notes(selected, stage.placements[selected.name])
+        notes.append(f"Daten {selected.name}: {data[selected.name].describe()}")
+        notes += ranking.notes
+        decision = RoutingDecision(
+            model=selected,
+            classification=classification,
+            reason=ranking.reason
+            or self._reason(selected, ranked, classification, request, data[selected.name]),
+            fallbacks=ranked[1 : 1 + self.max_fallbacks],
+            rejected=stage.rejected,
+            considered=[m.name for m in ranked],
+            notes=notes,
+            request=request,
+            data_status={name: d.status.value for name, d in data.items()},
+            ranker=ranking.ranker,
+            scores=ranking.scores,
+        )
+        if self.log is not None:
+            self.log.record(decision)
+        return decision
+
+    # ------------------------------------------------------------------ Stufen
+
+    async def candidates(
+        self, request: RoutingRequest, classification: TaskClassification
+    ) -> CandidateSet:
+        """Stufe 1 – harte Regeln. Wirft :class:`NoModelAvailableError` ohne gültigen Kandidaten.
+
+        Jeder Ranker (regelbasiert oder gelernt) sieht ausschließlich diese Kandidaten.
+        """
         models = self.registry.list_effective()
         data = {m.name: self.registry.data_status(m.name) for m in models}
         availability = await self.availability.check_all(models)
@@ -114,28 +173,27 @@ class RuleBasedRouter(ModelRouter):
             if self.log is not None:
                 self.log.record_failure(request, classification, error)
             raise error
+        return CandidateSet(classification, candidates, rejected, placements, data, availability)
 
-        ranked = sorted(candidates, key=lambda m: m.name)
+    def is_valid(self, model: ModelMetadata, stage: CandidateSet) -> list[str]:
+        """Erneute Prüfung eines vorgeschlagenen Modells gegen die harten Regeln."""
+        if model.name not in {m.name for m in stage.candidates}:
+            known = {r.model: r.reasons for r in stage.rejected}
+            return list(known.get(model.name, ("kein Kandidat dieser Anfrage",)))
+        availability = stage.availability.get(model.name)
+        if availability is None:
+            return ["Verfügbarkeit unbekannt"]
+        reasons, _ = self._hard_filter(model, stage.classification, availability)
+        return reasons
+
+    def rank(self, stage: CandidateSet, request: RoutingRequest) -> Ranking:
+        """Stufe 2 – Rangfolge unter den gültigen Kandidaten (hier: Regeln)."""
+        ranked = sorted(stage.candidates, key=lambda m: m.name)
         ranked.sort(
-            key=lambda m: self._rank_key(m, classification, request, placements), reverse=True
+            key=lambda m: self._rank_key(m, stage.classification, request, stage.placements),
+            reverse=True,
         )
-        selected = ranked[0]
-        notes = self._notes(selected, placements[selected.name])
-        notes.append(f"Daten {selected.name}: {data[selected.name].describe()}")
-        decision = RoutingDecision(
-            model=selected,
-            classification=classification,
-            reason=self._reason(selected, ranked, classification, request, data[selected.name]),
-            fallbacks=ranked[1 : 1 + self.max_fallbacks],
-            rejected=rejected,
-            considered=[m.name for m in ranked],
-            notes=notes,
-            request=request,
-            data_status={name: d.status.value for name, d in data.items()},
-        )
-        if self.log is not None:
-            self.log.record(decision)
-        return decision
+        return Ranking(ranked=ranked, ranker="rules")
 
     def report_failure(self, model_name: str, reason: str) -> None:
         """Akuter Ausfall (Timeout, Runtime weg): Modell bis zum nächsten Check meiden."""

@@ -59,6 +59,8 @@ class MeasuredOverrides:
     memory_requirement: float | None = None
     context_length: int | None = None
     tokens_per_second: float | None = None
+    latency_s: float | None = None
+    """Gemessene Antwortzeit (erstes Token) – Feature für den Learned Router."""
     notes: tuple[str, ...] = ()
     field_sources: Mapping[str, str] = field(default_factory=dict, hash=False)
     """Feld → Messmethode/Status (für Logs und Nachvollziehbarkeit)."""
@@ -114,6 +116,8 @@ def apply_overrides(model: ModelMetadata, overrides: MeasuredOverrides) -> Model
     extra["measured_source"] = overrides.source
     if overrides.tokens_per_second is not None:
         extra["measured_tokens_per_second"] = overrides.tokens_per_second
+    if overrides.latency_s is not None:
+        extra["measured_latency_s"] = overrides.latency_s
     return _replace(model, extra=extra, **changes)
 
 

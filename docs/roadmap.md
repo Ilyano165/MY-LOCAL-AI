@@ -49,7 +49,9 @@ implementieren → Tests → Fehler beheben → dokumentieren.
 > nach Komplexität und Latenz, Routing Logs mit Ergebnis-Rückmeldung, LLM-/Hybrid-Klassifikator,
 > Engine- und Agent-Integration. Routing-Datensatz (150 Fälle) + Evaluator + Baseline
 > (`evaluation/reports/routing_baseline.md`): Kategorie 72 %, Komplexität 46.7 %, 2 kritische
-> Fehler. Offen: Regelverbesserungen laut Baseline, Zweitannotation, gelernter Router.
+> Fehler. Erster Learned Router (`docs/learned-routing.md`): harte Regeln vorrangig, Vergleich auf
+> simulierten Ergebnissen – sicherer, aber langsamer; kein Vorteil nachgewiesen, nicht aktiviert.
+> Offen: Regelverbesserungen laut Baseline, Zweitannotation, echte Routing-Logs.
 
 - Regelbasierter Klassifikator (Aufgabe → Rolle), Auflösung (Rolle → Modell) mit Capability-Filter und Fallback-Kette
 - Routing-Entscheidungen im Trace

@@ -173,6 +173,10 @@ class RoutingDecision:
     request: RoutingRequest | None = None
     data_status: dict[str, str] = field(default_factory=dict)
     """Modell → MEASURED/PARTIAL/STALE/UNMEASURED (Herkunft der Routing-Daten)."""
+    ranker: str = "rules"
+    """Welche Komponente die Rangfolge bestimmt hat (``rules``, ``learned``, …)."""
+    scores: dict[str, float] = field(default_factory=dict)
+    """Scores des Rankers je Kandidat (leer bei Regeln)."""
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat(timespec="seconds"))
 
@@ -205,6 +209,10 @@ class RoutingDecision:
             "rejected": {r.model: list(r.reasons) for r in self.rejected},
             "notes": self.notes,
             "data_status": self.data_status,
+            "ranker": self.ranker,
+            "scores": {k: round(v, 4) for k, v in self.scores.items()},
+            "needs_vision": self.request.needs_vision if self.request else None,
+            "conversation_tokens": self.request.conversation_tokens if self.request else None,
             "latency": self.request.latency.value if self.request else None,
         }
 
@@ -238,8 +246,15 @@ class ModelRouter(abc.ABC):
         success: bool,
         verdict: str | None = None,
         quality: float | None = None,
+        latency_ms: float | None = None,
     ) -> None:
         """Ergebnis einer gerouteten Aufgabe ins Routing-Log (falls vorhanden) nachtragen."""
         log = getattr(self, "log", None)
         if log is not None:
-            log.record_outcome(decision_id, success=success, verdict=verdict, quality=quality)
+            log.record_outcome(
+                decision_id,
+                success=success,
+                verdict=verdict,
+                quality=quality,
+                latency_ms=latency_ms,
+            )

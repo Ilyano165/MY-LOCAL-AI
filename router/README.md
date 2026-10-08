@@ -62,6 +62,15 @@ zur nächsten Prüfung gemieden wird. Ohne Router bleibt das bisherige Verhalten
 
 Trockenlauf: `python -m scripts.route --config ~/.nova/models.toml "Aufgabe"`
 
+## Learned Router
+
+`LearnedRouter` (`learned_router.py`) nutzt dieselben harten Regeln (`RuleBasedRouter.candidates`)
+und ersetzt nur die Rangfolge durch einen kleinen linearen Ranker (`ranking_model.py`, Merkmale
+in `feature_extractor.py`, Daten in `training_data.py`). Jeder Vorschlag wird erneut gegen die
+harten Regeln geprüft; Verwerfungen und Ausfälle des Rankers stehen im Routing-Log. Details,
+Daten, Grenzen: `docs/learned-routing.md`; Vergleich: `evaluation/reports/learned_vs_rule.md`.
+Nicht als Standard aktiviert – Vorteil ist nicht nachgewiesen.
+
 ## Evaluation
 
 `python -m scripts.evaluate_routing` – Datensatz `evaluation/datasets/routing_tasks.jsonl`,

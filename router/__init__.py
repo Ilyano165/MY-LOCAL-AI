@@ -20,22 +20,28 @@ from router.base import (
     estimate_tokens,
 )
 from router.classifier import HybridClassifier, LLMClassifier, RuleBasedClassifier
+from router.learned_router import LearnedRanker, LearnedRouter, LearnedRoutingError
 from router.resources import ResourceBudget, detect_resources
 from router.routing_log import JsonlRoutingLog, MemoryRoutingLog, RoutingLog, format_decision
-from router.rule_router import RuleBasedRouter
+from router.rule_router import CandidateSet, Ranking, RuleBasedRouter
 
 __all__ = [
     "Availability",
+    "CandidateSet",
     "Complexity",
     "HybridClassifier",
     "JsonlRoutingLog",
     "LLMClassifier",
     "Latency",
+    "LearnedRanker",
+    "LearnedRouter",
+    "LearnedRoutingError",
     "MemoryRoutingLog",
     "ModelAvailability",
     "ModelRouter",
     "NoModelAvailableError",
     "ProviderAvailability",
+    "Ranking",
     "Rejection",
     "ResourceBudget",
     "RoutingCategory",

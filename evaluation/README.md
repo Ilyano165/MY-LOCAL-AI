@@ -22,6 +22,7 @@ speichert Profile, die der Router den Konfigurationswerten vorzieht (siehe
 | `hardware.py` | Hardware-Erkennung (CPU, RAM, NVIDIA/AMD/Apple, Fingerprint), `ResourceSampler`, Server-PID über Port |
 | `gguf.py` | GGUF-Header-Leser (Quantisierung, Architektur, Trainingskontext) |
 | `routing_evaluator.py` | Router-Evaluation gegen `datasets/routing_tasks.jsonl`: Genauigkeit, kritische Fehler (ungeeignetes Modell), Fallbacks, Kalibrierung, Latenz; Bericht |
+| `learned_routing.py` | Simulierte Ergebnisse aus Labels (gekennzeichnet), fester Split, Vergleich Rule vs. Learned Router |
 | `datasets/` | Routing-Datensatz (150 Aufgaben) und Evaluationsflotte – siehe `datasets/README.md` |
 | `reports/` | `routing_baseline.md` (+ `.json`) und gepflegte Verbesserungsvorschläge |
 

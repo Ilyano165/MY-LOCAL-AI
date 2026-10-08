@@ -284,6 +284,8 @@ class Task:
     memory_context: str = ""
     routing_ids: list[str] = field(default_factory=list)
     """IDs der Routing-Entscheidungen dieses Laufs (Ergebnis wird beim Abschluss nachgetragen)."""
+    routing_latency_ms: dict[str, float] = field(default_factory=dict)
+    """Summierte Modell-Latenz je Routing-Entscheidung (Trainingsdaten des Learned Routers)."""
     verification_report: dict[str, Any] | None = None
     """Bericht der Verification Engine zum Gesamtergebnis (siehe evaluation/)."""
     """Daraus erzeugter Kontextblock für die Prompts von Planner und Executor."""
@@ -357,6 +359,7 @@ class Task:
             memory_context=str(data.get("memory_context", "")),
             verification_report=data.get("verification_report"),
             routing_ids=list(data.get("routing_ids", [])),
+            routing_latency_ms=dict(data.get("routing_latency_ms", {})),
             created_at=data.get("created_at", utc_now()),
             updated_at=data.get("updated_at", utc_now()),
         )
