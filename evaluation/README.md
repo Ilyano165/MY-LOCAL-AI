@@ -21,6 +21,9 @@ speichert Profile, die der Router den Konfigurationswerten vorzieht (siehe
 | `benchmark_results.py` | `Measurement` (Wert + Status + Methode), `ModelProfile`, `ProfileStore` (JSON, `~/.nova/benchmarks`) |
 | `hardware.py` | Hardware-Erkennung (CPU, RAM, NVIDIA/AMD/Apple, Fingerprint), `ResourceSampler`, Server-PID über Port |
 | `gguf.py` | GGUF-Header-Leser (Quantisierung, Architektur, Trainingskontext) |
+| `routing_evaluator.py` | Router-Evaluation gegen `datasets/routing_tasks.jsonl`: Genauigkeit, kritische Fehler (ungeeignetes Modell), Fallbacks, Kalibrierung, Latenz; Bericht |
+| `datasets/` | Routing-Datensatz (150 Aufgaben) und Evaluationsflotte – siehe `datasets/README.md` |
+| `reports/` | `routing_baseline.md` (+ `.json`) und gepflegte Verbesserungsvorschläge |
 
 ## Strategien
 
@@ -64,6 +67,14 @@ Regressions-Gate: Jeder False Accept lässt ihn scheitern.
 einen Status (`MEASURED`, `REPORTED`, `DETECTED`, `CONFIGURED`, `NOT_SUPPORTED`,
 `NOT_MEASURABLE`, `FAILED`, `UNMEASURED`). Nur echte Messwerte gelangen in den Router.
 Details, Methoden und Grenzen: `docs/benchmarking.md`.
+
+## Routing-Evaluation
+
+`python -m scripts.evaluate_routing` misst den Router gegen 150 gelabelte Aufgaben in zwei
+Szenarien (alle Modelle verfügbar / Ausfälle). Ein ungeeignetes Modell (Vision-Aufgabe ohne
+Vision, Coding ohne Coding, Tool-Aufgabe ohne Tool-Calling, Kontext zu klein) ist ein
+**kritischer Fehler** und wiegt 10× so schwer wie eine falsche Kategorie. Baseline:
+`reports/routing_baseline.md`.
 
 ## Grenzen
 

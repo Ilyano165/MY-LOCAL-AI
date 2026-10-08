@@ -62,6 +62,11 @@ zur nächsten Prüfung gemieden wird. Ohne Router bleibt das bisherige Verhalten
 
 Trockenlauf: `python -m scripts.route --config ~/.nova/models.toml "Aufgabe"`
 
+## Evaluation
+
+`python -m scripts.evaluate_routing` – Datensatz `evaluation/datasets/routing_tasks.jsonl`,
+Baseline und Verbesserungsvorschläge in `evaluation/reports/routing_baseline.md`.
+
 ## Grenzen
 
 * Regeln sind auf Deutsch/Englisch zugeschnitten; Token-Zählung ist eine Schätzung.

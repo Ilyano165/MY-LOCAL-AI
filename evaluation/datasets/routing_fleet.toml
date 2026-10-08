@@ -1,0 +1,112 @@
+# Feste Evaluationsflotte für den Routing-Datensatz (fiktive Modellklassen, keine echten Modelle).
+#
+# Die Werte sind bewusst KONFIGURIERTE Annahmen und gehören nur zur Evaluation: Sie bilden einen
+# typischen lokalen Bestand ab (klein/schnell, Allround, Coder, Denker, Vision, Langkontext,
+# multimodal). So ist die Baseline reproduzierbar und unabhängig von der Hardware des Nutzers.
+
+[[providers]]
+name = "eval"
+type = "openai_compatible"
+base_url = "http://127.0.0.1:1"
+
+[[models]]
+name = "fast-small"
+provider = "eval"
+parameter_count = "3B"
+context_length = 8192
+reasoning_capability = "basic"
+coding_capability = "basic"
+vision_capability = "none"
+tool_calling = true
+speed = "fast"
+memory_requirement = 2.5
+quantization = "Q4_K_M"
+
+[[models]]
+name = "general-mid"
+provider = "eval"
+parameter_count = "8B"
+context_length = 32768
+reasoning_capability = "good"
+coding_capability = "good"
+vision_capability = "none"
+tool_calling = true
+speed = "medium"
+memory_requirement = 6
+quantization = "Q4_K_M"
+
+[[models]]
+name = "coder-large"
+provider = "eval"
+parameter_count = "30B"
+context_length = 65536
+reasoning_capability = "good"
+coding_capability = "strong"
+vision_capability = "none"
+tool_calling = true
+speed = "medium"
+memory_requirement = 20
+quantization = "Q4_K_M"
+
+[[models]]
+name = "reasoner-large"
+provider = "eval"
+parameter_count = "32B"
+context_length = 32768
+reasoning_capability = "strong"
+coding_capability = "good"
+vision_capability = "none"
+tool_calling = true
+speed = "slow"
+memory_requirement = 22
+quantization = "Q4_K_M"
+
+[[models]]
+name = "vision-mid"
+provider = "eval"
+parameter_count = "12B"
+context_length = 16384
+reasoning_capability = "basic"
+coding_capability = "none"
+vision_capability = "good"
+tool_calling = false
+speed = "medium"
+memory_requirement = 9
+quantization = "Q4_K_M"
+
+[[models]]
+name = "longctx-mid"
+provider = "eval"
+parameter_count = "14B"
+context_length = 131072
+reasoning_capability = "good"
+coding_capability = "good"
+vision_capability = "none"
+tool_calling = true
+speed = "slow"
+memory_requirement = 16
+quantization = "Q4_K_M"
+
+[[models]]
+name = "omni-large"
+provider = "eval"
+parameter_count = "27B"
+context_length = 131072
+reasoning_capability = "strong"
+coding_capability = "good"
+vision_capability = "good"
+tool_calling = true
+speed = "slow"
+memory_requirement = 24
+quantization = "Q4_K_M"
+
+# Szenarien: welche Modelle gerade nicht verfügbar sind (Runtime aus, nicht geladen).
+[[scenarios]]
+name = "all_available"
+description = "Alle Modelle verfügbar"
+unavailable = []
+
+[[scenarios]]
+name = "degraded"
+description = "Coder und Langkontext-Modell ausgefallen"
+unavailable = ["coder-large", "longctx-mid"]

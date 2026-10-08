@@ -22,6 +22,10 @@ Das **Model-Benchmarking** (`docs/benchmarking.md`) misst pro Modell Fähigkeit 
 unabhängig bewertet) und Hardware-Leistung (Ladezeit, tok/s, Spitzen-VRAM/RAM) in echten Läufen.
 Der Router bevorzugt diese Profile; Modelle ohne Profil sind ausdrücklich `UNMEASURED`.
 
+Die **Routing-Evaluation** (`evaluation/routing_evaluator.py`, Datensatz in
+`evaluation/datasets/`) misst den Router reproduzierbar; die Baseline steht in
+`evaluation/reports/routing_baseline.md`.
+
 ## 1. Ebenen
 
 | Ebene | Was wird gemessen | Beispiele für Metriken | Ab Phase |

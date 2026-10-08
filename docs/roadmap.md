@@ -47,8 +47,9 @@ implementieren → Tests → Fehler beheben → dokumentieren.
 > **Stand 2026-10-08: umgesetzt** (`router/`): regelbasierte Klassifikation (6 Kategorien,
 > Komplexität), harte Filter (Verfügbarkeit, VRAM/RAM, Kontext, Tools, Fähigkeit), Rangfolge
 > nach Komplexität und Latenz, Routing Logs mit Ergebnis-Rückmeldung, LLM-/Hybrid-Klassifikator,
-> Engine- und Agent-Integration. Offen: gelabelter Router-Datensatz (≥ 100 Fälle) mit Messung,
-> Kalibrierung der Fähigkeitsangaben auf echter Hardware, gelernter Router.
+> Engine- und Agent-Integration. Routing-Datensatz (150 Fälle) + Evaluator + Baseline
+> (`evaluation/reports/routing_baseline.md`): Kategorie 72 %, Komplexität 46.7 %, 2 kritische
+> Fehler. Offen: Regelverbesserungen laut Baseline, Zweitannotation, gelernter Router.
 
 - Regelbasierter Klassifikator (Aufgabe → Rolle), Auflösung (Rolle → Modell) mit Capability-Filter und Fallback-Kette
 - Routing-Entscheidungen im Trace
