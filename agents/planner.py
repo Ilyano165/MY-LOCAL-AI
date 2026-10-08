@@ -295,8 +295,9 @@ class LLMPlanner(Planner):
 
     async def plan(self, task: Task) -> list[Subtask]:
         notes = "\n".join(f"- {n}" for n in task.constraints.notes) or "- none"
+        memory = f"Memory:\n{task.memory_context}\n\n" if task.memory_context else ""
         prompt = (
-            f"Objective:\n{task.objective}\n\nConstraints:\n{notes}\n"
+            f"Objective:\n{task.objective}\n\n{memory}Constraints:\n{notes}\n"
             f"Maximum subtasks: {task.constraints.max_subtasks}\n\n"
             f"Available tools:\n{self._tool_block()}\n\n{self._format()}"
         )

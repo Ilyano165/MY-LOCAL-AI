@@ -274,6 +274,10 @@ class Task:
     errors: list[ErrorRecord] = field(default_factory=list)
     verification_results: list[VerificationRecord] = field(default_factory=list)
     final_result: FinalResult | None = None
+    recalled_memories: list[dict[str, Any]] = field(default_factory=list)
+    """Beim Start abgerufene Erinnerungen (id, layer, kind, content, score)."""
+    memory_context: str = ""
+    """Daraus erzeugter Kontextblock für die Prompts von Planner und Executor."""
     created_at: str = field(default_factory=utc_now)
     updated_at: str = field(default_factory=utc_now)
 
@@ -340,6 +344,8 @@ class Task:
             final_result=FinalResult.from_dict(data["final_result"])
             if data.get("final_result")
             else None,
+            recalled_memories=list(data.get("recalled_memories", [])),
+            memory_context=str(data.get("memory_context", "")),
             created_at=data.get("created_at", utc_now()),
             updated_at=data.get("updated_at", utc_now()),
         )

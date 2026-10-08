@@ -12,8 +12,10 @@ Grundsätze:
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
+import sqlite3
+from collections.abc import Awaitable, Callable
 from pathlib import Path
+from typing import TypeVar
 
 from agents.executor import ExecutionOutcome, Executor, FailureAnalyzer, reset_interrupted
 from agents.planner import HeuristicTaskAnalyzer, LLMPlanner, Planner, PlanningError, TaskAnalyzer
@@ -31,6 +33,10 @@ from agents.task import (
     Verdict,
 )
 from agents.verifier import Verifier
+from memory.base import MemoryStoreError
+from memory.memory_manager import MemoryManager
+from memory.project_memory import project_id_for
+from memory.relevance import MemoryContext
 from models.base import ChatRequest, GenerationParams, Message, ModelError
 from models.capabilities import TaskRequirements, TaskType
 from models.inference import InferenceEngine
@@ -39,6 +45,7 @@ from tools.registry import ToolRegistry
 logger = logging.getLogger(__name__)
 
 EventHandler = Callable[[Task, Phase, str], None]
+T = TypeVar("T")
 
 _FINAL_SYSTEM = (
     "You are NOVA. Write the final answer for the user based ONLY on the subtask results "
@@ -61,6 +68,9 @@ class Agent:
         verifier: Verifier | None = None,
         failure_analyzer: FailureAnalyzer | None = None,
         on_event: EventHandler | None = None,
+        memory: MemoryManager | None = None,
+        session_id: str | None = None,
+        project_id: str | None = None,
     ) -> None:
         self.engine = engine
         self.tools = tools
@@ -76,12 +86,21 @@ class Agent:
         self.executor = executor or Executor(engine, tools, self.workspace)
         self.failure_analyzer = failure_analyzer or FailureAnalyzer(engine)
         self.on_event = on_event
+        self.memory = memory
+        self.session_id = session_id
+        self.project_id = project_id or (project_id_for(self.workspace) if memory else None)
 
     # ------------------------------------------------------------------ öffentliche API
 
     async def run(self, objective: str, constraints: Constraints | None = None) -> Task:
         task = Task(objective=objective, constraints=constraints or Constraints())
         await self._save(task)
+        if self.memory is not None:
+            # Präferenzen/Anweisungen in der Aufgabe selbst („… und antworte immer auf Deutsch“)
+            # werden wie jede Nutzernachricht bewertet – nicht automatisch gespeichert.
+            await self._memory_call(
+                task, self.memory.observe_message("user", objective, self._memory_ctx(task))
+            )
         return await self._loop(task)
 
     async def resume(self, task_id: str) -> Task:
@@ -140,8 +159,83 @@ class Agent:
             f"Analyse: typ={a.task_type.value}, komplexität={a.complexity.value}, "
             f"tools={a.requires_tools}, signale={a.signals}",
         )
+        await self._recall(task)
         task.phase = Phase.PLAN
         await self._save(task)
+
+    # ------------------------------------------------------------------ Memory
+
+    def _memory_ctx(self, task: Task) -> MemoryContext:
+        return MemoryContext(
+            session_id=self.session_id, project_id=self.project_id, task_id=task.id
+        )
+
+    async def _memory_call(self, task: Task, call: Awaitable[T]) -> T | None:
+        """Memory ist Hilfsfunktion: Fehler dort dürfen die Aufgabe nicht abbrechen."""
+        try:
+            return await call
+        except (MemoryStoreError, sqlite3.Error, ValueError) as exc:
+            task.record_error(task.phase, "memory", f"Memory nicht verfügbar: {exc}")
+            return None
+
+    async def _recall(self, task: Task) -> None:
+        if self.memory is None:
+            return
+        result = await self._memory_call(
+            task, self.memory.recall(task.objective, self._memory_ctx(task))
+        )
+        if result is None or result.empty:
+            return
+        task.recalled_memories = [
+            {
+                "id": m.item.id,
+                "layer": m.item.layer.value,
+                "kind": m.item.kind.value,
+                "content": m.item.content,
+                "score": round(m.score, 3),
+            }
+            for m in result.memories
+        ] + [
+            {
+                "id": g.id,
+                "layer": g.layer.value,
+                "kind": g.kind.value,
+                "content": g.content,
+                "score": None,
+            }
+            for g in result.guidance
+        ]
+        task.memory_context = result.as_prompt()
+        task.observe(
+            "memory",
+            f"{len(result.memories)} Erinnerung(en), "
+            f"{len(result.guidance)} Präferenz(en)/Anweisung(en) abgerufen",
+        )
+
+    async def _store_outcome(self, task: Task) -> None:
+        if self.memory is None or task.final_result is None:
+            return
+        ctx = self._memory_ctx(task)
+        verified = task.final_result.status == FinalStatus.SUCCESS
+        # Lehren: Ursachenanalysen von Teilaufgaben, die danach verifiziert gelangen.
+        passed = {s.id for s in task.subtasks if s.verdict == Verdict.PASSED}
+        lessons = [
+            e.analysis
+            for e in task.errors
+            if e.phase == Phase.CORRECT and e.analysis and e.subtask_id in passed
+        ]
+        await self._memory_call(
+            task,
+            self.memory.record_outcome(
+                task.objective,
+                task.final_result.status.value,
+                task.final_result.summary,
+                ctx,
+                lessons=lessons,
+                verified=verified,
+            ),
+        )
+        await self._memory_call(task, self.memory.end_task(ctx))
 
     async def _plan(self, task: Task) -> None:
         await self._enter(task, Phase.PLAN, "Plan wird erstellt")
@@ -315,6 +409,7 @@ class Agent:
             FinalStatus.ABORTED: TaskStatus.ABORTED,
         }.get(status, TaskStatus.FAILED)
         self._event(task, Phase.FINALIZE, summary)
+        await self._store_outcome(task)
         await self._save(task)
 
     async def _synthesize(self, task: Task, status: FinalStatus, summary: str) -> str:

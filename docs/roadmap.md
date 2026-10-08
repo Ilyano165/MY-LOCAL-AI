@@ -77,6 +77,11 @@ implementieren → Tests → Fehler beheben → dokumentieren.
 
 ## Phase 6 – Memory & RAG
 
+> **Stand 2026-10-08: Memory umgesetzt** (`memory/`): Working/Session/Project/Long-Term,
+> automatisches Routing nach Relevanz, Secret-Schutz, SQLite+FTS5, Abruf mit
+> Relevanz×Wichtigkeit×Aktualität, Agent-Integration. Offen: Embeddings/semantische Suche,
+> Widerspruchserkennung, RAG-Pipeline.
+
 - `SQLiteMemoryStore` (FTS5, optional Vektoren)
 - RAG-Pipeline: Loader (Markdown, Text, PDF, Code), Chunker (struktur-/codebewusst), Embedder, Index
 - Hybrid-Retrieval (BM25 + Vektor, RRF), optionaler Cross-Encoder-Reranker

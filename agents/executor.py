@@ -106,6 +106,8 @@ class Executor:
         ]
         if notes:
             parts.append(f"Constraints:\n{notes}")
+        if task.memory_context:
+            parts.append(f"Memory:\n{task.memory_context}")
         if dep_block:
             parts.append(f"Results of prerequisite subtasks:\n{dep_block}")
         if feedback:
