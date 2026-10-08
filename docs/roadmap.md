@@ -51,6 +51,10 @@ implementieren → Tests → Fehler beheben → dokumentieren.
 
 ## Phase 4 – Tool-System
 
+> **Stand 2026-10-08: umgesetzt** (`tools/`): 9 Tools (Dateisystem, Terminal, Git), Policy,
+> Bestätigung, Audit-Log, strukturierte Ergebnisse, Begründungspflicht. Offen: echte Sandbox,
+> Policy-Konfiguration aus `config/`, Bestätigungsdialog in CLI/UI.
+
 - `ToolRegistry`: Schema-Validierung, Permissions, Timeouts, Output-Kürzung
 - Erste Tools: `read_file`, `list_dir`, `search_text`, `write_file`/`edit_file` (Workspace-gebunden), `run_command` (Allowlist, kein Shell-Interpreter), `remember`/`recall`
 - Bestätigungsmechanismus für Tools mit Seiteneffekten

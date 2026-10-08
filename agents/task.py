@@ -189,15 +189,19 @@ class Observation:
 
 @dataclass
 class ToolResultRecord:
+    """Ein Tool-Aufruf im Task State: was (tool, arguments), warum (reason), mit welchem
+    strukturierten Ergebnis (success, output, error, metadata)."""
+
     subtask_id: str
     attempt: int
     tool: str
     arguments: dict[str, Any]
-    ok: bool
-    output: str
+    success: bool
+    output: str | None
     error: str | None
-    data: dict[str, Any] = field(default_factory=dict)
-    duration_ms: float = 0.0
+    metadata: dict[str, Any] = field(default_factory=dict)
+    reason: str = ""
+    invocation_id: str = ""
     timestamp: str = field(default_factory=utc_now)
 
     @classmethod

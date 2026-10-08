@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import ast
 import asyncio
-import os
 import sys
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
@@ -37,16 +36,14 @@ from agents.task import (
     VerificationRecord,
     VerificationSpec,
 )
-from tools.base import ToolError
-from tools.filesystem import resolve_in_workspace, sha256_text
+from tools.base import ToolContext, ToolError, safe_environment, sha256_text
 
 DEFAULT_ALLOWED_COMMANDS: tuple[tuple[str, ...], ...] = (
     ("python", "-m", "pytest"),
     ("python", "-m", "py_compile"),
     ("pytest",),
 )
-_SECRET_MARKERS = ("KEY", "TOKEN", "SECRET", "PASSWORD", "CREDENTIAL")
-_WRITE_TOOLS = frozenset({"write_file"})
+_WRITE_TOOLS = frozenset({"write_file", "edit_file"})
 _PYTEST_NO_TESTS = 5  # pytest: "no tests collected"
 
 
@@ -77,14 +74,6 @@ def _failed(detail: str) -> CheckOutcome:
 
 def _unverified(detail: str) -> CheckOutcome:
     return CheckOutcome(Verdict.UNVERIFIED, detail)
-
-
-def _safe_env() -> dict[str, str]:
-    env = {k: v for k, v in os.environ.items() if not any(m in k.upper() for m in _SECRET_MARKERS)}
-    # Python prüft gecachten Bytecode nur über mtime (Sekunden) + Größe: eine Korrektur gleicher
-    # Länge in derselben Sekunde würde sonst den alten Code ausführen.
-    env["PYTHONDONTWRITEBYTECODE"] = "1"
-    return env
 
 
 class Verifier:
@@ -142,7 +131,7 @@ class Verifier:
             if rec.tool not in _WRITE_TOOLS:
                 continue
             path = str(rec.arguments.get("path", ""))
-            if rec.ok:
+            if rec.success:
                 last_write[path] = rec
                 failed_writes.discard(path)
             else:
@@ -151,7 +140,7 @@ class Verifier:
             specs.append(
                 VerificationSpec(
                     "file_matches_written",
-                    {"path": path, "sha256": rec.data.get("sha256", "")},
+                    {"path": path, "sha256": rec.metadata.get("sha256", "")},
                     auto=True,
                 )
             )
@@ -226,7 +215,7 @@ class Verifier:
     # ------------------------------------------------------------------ Checks
 
     def _path(self, params: Mapping[str, Any]) -> Path:
-        return resolve_in_workspace(self.workspace, str(params["path"]))
+        return ToolContext(self.workspace).resolve(str(params["path"]))
 
     async def _file_exists(self, params: Mapping[str, Any], ctx: VerifyContext) -> CheckOutcome:
         path = self._path(params)
@@ -299,7 +288,7 @@ class Verifier:
             proc = await asyncio.create_subprocess_exec(
                 *argv,
                 cwd=self.workspace,
-                env=_safe_env(),
+                env=safe_environment(),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
             )
@@ -349,7 +338,7 @@ class Verifier:
     async def _tool_succeeded(self, params: Mapping[str, Any], ctx: VerifyContext) -> CheckOutcome:
         tool = str(params["tool"])
         calls = [r for r in ctx.attempt_results if r.tool == tool]
-        if any(r.ok for r in calls):
+        if any(r.success for r in calls):
             return _passed(f"{tool} erfolgreich ausgeführt")
         if calls:
             return _failed(f"{tool} {len(calls)}x aufgerufen, nie erfolgreich: {calls[-1].error}")

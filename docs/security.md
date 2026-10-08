@@ -96,6 +96,18 @@ Regeln:
 - Traces enthalten Prompts und Tool-Ausgaben → gleiche Schutzstufe wie die Quelldaten;
   Aufbewahrungsdauer konfigurierbar.
 
+## 8a. Umsetzungsstand (2026-10-08)
+
+Umgesetzt in `tools/` (Details: `tools/README.md`): erlaubte Verzeichnisse mit Symlink-Schutz und
+Sperrliste, Berechtigungsstufen mit Policy und Bestätigungskanal, Timeouts inkl. Beenden der
+Prozessgruppe, Ausgabegrenzen, Audit-Log (JSONL, redigiert), Befehlsklassifizierung ohne Shell,
+Schutz der Git-Tools gegen ausführbare Repo-Konfiguration, Sicherungskopien vor Dateiänderungen
+(`ToolContext.backup_dir`).
+
+Noch offen: Ausführung in einer echten Sandbox (Container/bubblewrap) – `execute_command` läuft mit
+den Rechten des Nutzers; Schutz besteht aus Klassifizierung + Bestätigung, nicht aus Isolation.
+Konfiguration der Policy über `config/` und ein Bestätigungsdialog in CLI/UI.
+
 ## 9. Sicherheitstests (Pflicht ab Phase 4)
 
 - Path-Traversal (`../`, absolute Pfade, Symlink nach außen) → `PermissionDenied`

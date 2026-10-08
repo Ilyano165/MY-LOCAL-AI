@@ -73,6 +73,10 @@ class ScriptedProvider(ModelProvider):
             calls = []
             for tool, args in item:
                 self._call_ids += 1
+                # Modelle müssen eine Begründung liefern; Skripte dürfen sie weglassen.
+                args = {"reason": f"Test: {tool}", **args}
+                if args["reason"] is None:
+                    del args["reason"]
                 calls.append(ToolCall(f"call_{self._call_ids}", tool, args))
             message = Message.assistant("", calls)
             reason = FinishReason.TOOL_CALLS

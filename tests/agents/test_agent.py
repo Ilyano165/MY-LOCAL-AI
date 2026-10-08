@@ -11,8 +11,8 @@ from agents.state import JsonFileTaskStore
 from agents.task import Constraints, FinalStatus, Phase, SubtaskStatus, Task, TaskStatus, Verdict
 from models.base import ChatRequest
 from tests.agents.fakes import ScriptedProvider, engine_for, plan_json
-from tools.base import ToolRegistry
-from tools.filesystem import default_tools
+from tools import default_tools
+from tools.registry import ToolRegistry
 
 PYTEST = ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider"]
 BROKEN = "def add(a, b)\n    return a + b\n"

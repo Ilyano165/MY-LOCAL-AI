@@ -34,7 +34,7 @@ from agents.verifier import Verifier
 from models.base import ChatRequest, GenerationParams, Message, ModelError
 from models.capabilities import TaskRequirements, TaskType
 from models.inference import InferenceEngine
-from tools.base import ToolRegistry
+from tools.registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
 

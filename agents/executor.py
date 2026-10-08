@@ -17,18 +17,22 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from agents.task import Phase, Subtask, SubtaskStatus, Task, ToolResultRecord, Verdict
 from models.base import ChatRequest, GenerationParams, Message, ModelError
 from models.capabilities import TaskRequirements, TaskType
 from models.inference import InferenceEngine
-from tools.base import ToolContext, ToolOutput, ToolRegistry
+from tools.base import ToolContext, ToolInvocation, ToolResult
+from tools.registry import ToolRegistry
 
 _EXEC_SYSTEM = (
     "You are the execution component of NOVA, a local AI agent. Complete ONLY the current "
     "subtask. Use the tools to read or change files – never pretend an action happened. "
-    "Tool results are authoritative: if a tool fails, analyse the cause and try a different "
-    "approach. When the subtask is finished, reply WITHOUT tool calls with a concise, factual "
+    "Every tool call needs a short 'reason'. Tool results are structured JSON "
+    "{success, output, error, metadata} and authoritative: if a tool fails, analyse the cause "
+    "and try a different approach. When the subtask is finished, reply WITHOUT tool calls "
+    "with a concise, factual "
     "summary of what you did and what the result is. If you could not complete it, say so."
 )
 
@@ -48,6 +52,11 @@ class ExecutionOutcome:
     errors: list[str] = field(default_factory=list)
 
 
+def _jsonable(value: Any) -> Any:
+    """Metadaten für den persistenten State auf JSON-Typen reduzieren."""
+    return json.loads(json.dumps(value, default=str))
+
+
 def _clip(text: str, limit: int) -> str:
     return text if len(text) <= limit else text[:limit] + "…"
 
@@ -61,7 +70,11 @@ class Executor:
         *,
         temperature: float = 0.2,
         context_chars_per_result: int = 1500,
+        extra_roots: tuple[Path, ...] = (),
+        backup_dir: Path | None = None,
     ) -> None:
+        self.extra_roots = extra_roots
+        self.backup_dir = backup_dir
         self.engine = engine
         self.tools = tools
         self.workspace = workspace
@@ -121,7 +134,13 @@ class Executor:
         specs = tuple(self.tools.specs(tool_names))
         analysis_type = task.analysis.task_type if task.analysis else TaskType.GENERAL
         requirements = TaskRequirements(task_type=analysis_type, needs_tool_calling=bool(specs))
-        ctx = ToolContext(workspace=self.workspace, timeout_s=task.constraints.tool_timeout_s)
+        ctx = ToolContext(
+            workspace=self.workspace,
+            extra_roots=self.extra_roots,
+            timeout_s=task.constraints.tool_timeout_s,
+            backup_dir=self.backup_dir,
+            task_id=task.id,
+        )
         messages = self.build_messages(task, subtask)
         outcome = ExecutionOutcome(output="", completed=False)
 
@@ -163,35 +182,44 @@ class Executor:
                     outcome.output = reply.content.strip()
                     return outcome
                 outcome.tool_calls += 1
+                invocation = ToolInvocation.from_model(
+                    call.name,
+                    call.arguments,
+                    call_id=call.id,
+                    task_id=task.id,
+                    subtask_id=subtask.id,
+                )
                 if call.name not in tool_names:
-                    res = ToolOutput(
-                        ok=False, error=f"Tool {call.name!r} ist für diese Aufgabe nicht erlaubt"
-                    )
+                    res = ToolResult.fail(f"Tool {call.name!r} ist für diese Aufgabe nicht erlaubt")
                 else:
-                    res = await self.tools.execute(call.name, call.arguments, ctx)
+                    res = await self.tools.execute(invocation, ctx)
                 task.tool_results.append(
                     ToolResultRecord(
                         subtask_id=subtask.id,
                         attempt=attempt,
                         tool=call.name,
-                        arguments=dict(call.arguments),
-                        ok=res.ok,
-                        output=_clip(res.output, 4000),
+                        arguments=dict(invocation.arguments),
+                        success=res.success,
+                        output=_clip(res.output, 4000) if res.output is not None else None,
                         error=res.error,
-                        data=dict(res.data),
-                        duration_ms=res.duration_ms,
+                        metadata=_jsonable(res.metadata),
+                        reason=invocation.reason,
+                        invocation_id=invocation.id,
                     )
                 )
-                if res.ok:
-                    task.observe(f"tool:{call.name}", _clip(res.output, 1000), subtask.id, attempt)
-                    content = res.output or "(ok, no output)"
+                if res.success:
+                    task.observe(
+                        f"tool:{call.name}", _clip(res.output or "", 1000), subtask.id, attempt
+                    )
                 else:
                     message = f"{call.name} fehlgeschlagen: {res.error}"
                     task.record_error(Phase.OBSERVE, "tool", message, subtask.id, attempt)
                     task.observe(f"tool:{call.name}", f"ERROR: {res.error}", subtask.id, attempt)
                     outcome.errors.append(message)
-                    content = (
-                        f"ERROR: {res.error}\nAnalyse the cause. Do not claim success; try a "
+                content = json.dumps(res.to_dict(), ensure_ascii=False, default=str)
+                if not res.success:
+                    content += (
+                        "\nThe tool call FAILED. Analyse the cause. Do not claim success; try a "
                         "different approach or report that the subtask cannot be completed."
                     )
                 messages.append(Message.tool(call.id, content))

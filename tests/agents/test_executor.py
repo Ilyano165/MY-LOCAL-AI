@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from agents.executor import ExecutionOutcome, Executor, FailureAnalyzer, reset_interrupted
@@ -14,8 +15,8 @@ from agents.task import (
 )
 from models.base import ProviderUnavailableError
 from tests.agents.fakes import ScriptedProvider, engine_for, tool_messages
-from tools.base import ToolRegistry
-from tools.filesystem import default_tools
+from tools import default_tools
+from tools.registry import ToolRegistry
 
 
 def make(
@@ -43,10 +44,16 @@ async def test_tool_loop_records_results_and_observations(tmp_path: Path) -> Non
     assert outcome.tool_calls == 2 and outcome.errors == []
     assert (tmp_path / "hello.txt").read_text() == "hi"
     assert [r.tool for r in task.tool_results] == ["write_file", "read_file"]
-    assert all(r.ok and r.attempt == 1 and r.subtask_id == "s1" for r in task.tool_results)
+    assert all(r.success and r.attempt == 1 and r.subtask_id == "s1" for r in task.tool_results)
     assert [o.source for o in task.observations] == ["tool:write_file", "tool:read_file", "model"]
-    # Tool-Ergebnis wurde dem Modell zurückgegeben
-    assert tool_messages(provider.requests["execute"][2])[-1] == "hi"
+    # Strukturiertes Tool-Ergebnis wurde dem Modell zurückgegeben
+    fed_back = json.loads(tool_messages(provider.requests["execute"][2])[-1])
+    assert fed_back["success"] is True and fed_back["error"] is None
+    assert fed_back["output"] == "1| hi"
+    assert fed_back["metadata"]["tool"] == "read_file"
+    # Begründung wurde getrennt von den Argumenten gespeichert
+    assert task.tool_results[0].reason == "Test: write_file"
+    assert "reason" not in task.tool_results[0].arguments
 
 
 async def test_tool_failure_is_recorded_and_fed_back(tmp_path: Path) -> None:
@@ -64,8 +71,11 @@ async def test_tool_failure_is_recorded_and_fed_back(tmp_path: Path) -> None:
     assert outcome.errors == ["read_file fehlgeschlagen: Datei nicht gefunden: fehlt.txt"]
     assert task.errors[0].phase == Phase.OBSERVE and task.errors[0].kind == "tool"
     fed_back = tool_messages(provider.requests["execute"][1])[0]
-    assert fed_back.startswith("ERROR:") and "Do not claim success" in fed_back
-    assert [r.ok for r in task.tool_results] == [False, True]
+    structured = json.loads(fed_back.split("\n")[0])
+    assert structured["success"] is False and structured["output"] is None
+    assert "nicht gefunden" in structured["error"]
+    assert "Do not claim success" in fed_back
+    assert [r.success for r in task.tool_results] == [False, True]
 
 
 async def test_disallowed_tool_is_rejected(tmp_path: Path) -> None:
@@ -81,7 +91,7 @@ async def test_disallowed_tool_is_rejected(tmp_path: Path) -> None:
 
 async def test_tool_budget_stops_attempt(tmp_path: Path) -> None:
     provider = ScriptedProvider(
-        execute=[[("list_dir", {})], [("list_dir", {})], [("list_dir", {})]]
+        execute=[[("list_directory", {})], [("list_directory", {})], [("list_directory", {})]]
     )
     executor, task, sub = make(tmp_path, provider, max_tool_calls_per_attempt=2)
     outcome = await executor.execute(task, sub)
@@ -154,3 +164,20 @@ def test_reset_interrupted() -> None:
     ]
     reset_interrupted(task)
     assert [s.status for s in task.subtasks] == [SubtaskStatus.PENDING, SubtaskStatus.DONE]
+
+
+async def test_tool_call_without_reason_is_rejected(tmp_path: Path) -> None:
+    provider = ScriptedProvider(execute=[[("list_directory", {"reason": None})], "aufgegeben"])
+    executor, task, sub = make(tmp_path, provider)
+    outcome = await executor.execute(task, sub)
+    assert "Begründung fehlt" in outcome.errors[0]
+    assert task.tool_results[0].success is False
+
+
+async def test_tool_specs_require_reason(tmp_path: Path) -> None:
+    provider = ScriptedProvider(execute=["ok"])
+    executor, task, sub = make(tmp_path, provider)
+    task.subtasks.append(Subtask("s2", "mehr"))  # Mehrschritt → Tools werden angeboten
+    await executor.execute(task, sub)
+    specs = provider.requests["execute"][0].tools
+    assert specs and all("reason" in s.parameters["required"] for s in specs)

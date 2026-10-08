@@ -7,7 +7,7 @@ import pytest
 from agents.executor import ExecutionOutcome
 from agents.task import Constraints, Subtask, Task, ToolResultRecord, Verdict, VerificationSpec
 from agents.verifier import Verifier
-from tools.filesystem import sha256_text
+from tools.base import sha256_text
 
 PYTEST = ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider"]
 
