@@ -12,6 +12,12 @@ hardcodierten Modellnamen (erzwungen durch `tests/test_no_hardcoded_models.py`).
 | `model_registry.py` | `ModelRegistry`: `register`, `get`, `list`, `find_best_for(task)`, `rank_for`, Laden aus TOML |
 | `inference.py` | `InferenceEngine` (Auswahl per Aufgabe oder Registry-Name, harter Timeout, optionaler Fallback), `ProviderRegistry`, Backend-Factory `PROVIDER_TYPES` |
 | `health.py` | `ModelHealthChecker`: present → loadable → inference → response_time → context (Needle) → tool_calling |
+| `measured.py` | Neutrale Schnittstelle für gemessene Werte: `MeasurementSource`, `MeasuredOverrides`, `DataStatus` (MEASURED/PARTIAL/STALE/UNMEASURED); `ModelRegistry.effective()` wendet sie an |
+
+Provider-Erweiterungen fürs Benchmarking: Bild-Eingaben (`Message.user(..., images=...)`,
+OpenAI-Content-Parts), `ChatResponse.runtime_stats` (llama.cpp `timings`), `runtime_info()`
+(llama.cpp `/props` + `/v1/models` meta, Ollama `/api/version` + `/api/ps`), `load()`/`unload()`
+(Ollama).
 
 ## Verwendung
 

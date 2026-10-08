@@ -10,6 +10,10 @@
 #   *_capability        none | basic | good | strong
 #   speed               slow | medium | fast   (auf DEINER Hardware)
 #
+# Fähigkeiten, speed und memory_requirement sind ANNAHMEN, bis sie gemessen wurden:
+#   python -m scripts.benchmark_models --config ~/.nova/models.toml
+# Danach nutzt der Router die Messwerte aus ~/.nova/benchmarks/ (ohne Profil: UNMEASURED).
+#
 # Secrets: niemals hier eintragen. Für Runtimes mit API-Key nur den NAMEN der
 # Umgebungsvariable angeben: api_key_env = "NOVA_LOCAL_API_KEY"
 

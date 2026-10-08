@@ -3,6 +3,10 @@
 **Verification Engine**: prüft Ergebnisse des Agenten unabhängig von dessen Behauptungen und
 bewertet sie mit einem internen Quality Score.
 
+**Model-Benchmarking**: misst Modellfähigkeit und Hardware-Leistung in echten Läufen und
+speichert Profile, die der Router den Konfigurationswerten vorzieht (siehe
+`docs/benchmarking.md`).
+
 | Datei | Inhalt |
 |---|---|
 | `verifier.py` | `VerificationContext`, `Check`, `CheckResult`, `VerificationStrategy`, `VerificationEngine`, Urteilsregel `decide`, Strategiewahl `infer_strategy` |
@@ -11,6 +15,12 @@ bewertet sie mit einem internen Quality Score.
 | `checks.py` | Datei-, Behauptungs-, Quellen-, Widerspruchs-, Rechen- und Anforderungs-Checks |
 | `quality.py` | `QualityScore` (correctness, completeness, requirements, errors, confidence) |
 | `benchmarks.py` | Benchmark der Engine mit bekannter Wahrheit; Kennzahl: False-Accept-Rate |
+| `benchmark_tasks.py` | 8 Standardaufgaben + Vision-Probe (deterministisch, unabhängig bewertet), Suite-Version mit Inhalts-Hash |
+| `model_benchmark.py` | `ModelBenchmark`: Fähigkeit (Scores) und Leistung (Ladezeit, tok/s, Spitzen-VRAM/RAM) getrennt; `ServerLauncher` |
+| `benchmark_runner.py` | `ModelBenchmarkRunner` (sequenziell, speichert nur Profile mit echten Messwerten), `attach_profiles`, Bericht |
+| `benchmark_results.py` | `Measurement` (Wert + Status + Methode), `ModelProfile`, `ProfileStore` (JSON, `~/.nova/benchmarks`) |
+| `hardware.py` | Hardware-Erkennung (CPU, RAM, NVIDIA/AMD/Apple, Fingerprint), `ResourceSampler`, Server-PID über Port |
+| `gguf.py` | GGUF-Header-Leser (Quantisierung, Architektur, Trainingskontext) |
 
 ## Strategien
 
@@ -47,6 +57,13 @@ sicher das Ergebnis stimmt. Details und Formeln: `quality.py`.
 `python -m scripts.verification_benchmark` – 22 eingebaute Fälle (korrekte und fehlerhafte
 Ergebnisse je Strategie). Der Test `tests/evaluation/test_benchmarks.py` ist ein
 Regressions-Gate: Jeder False Accept lässt ihn scheitern.
+
+## Model-Benchmarking
+
+`python -m scripts.benchmark_models --config ~/.nova/models.toml` – jeder Wert im Profil hat
+einen Status (`MEASURED`, `REPORTED`, `DETECTED`, `CONFIGURED`, `NOT_SUPPORTED`,
+`NOT_MEASURABLE`, `FAILED`, `UNMEASURED`). Nur echte Messwerte gelangen in den Router.
+Details, Methoden und Grenzen: `docs/benchmarking.md`.
 
 ## Grenzen
 

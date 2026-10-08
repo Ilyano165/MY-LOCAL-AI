@@ -68,19 +68,34 @@ class ToolCall:
 
 
 @dataclass(frozen=True, slots=True)
+class ImageInput:
+    """Bild für Vision-Modelle (Rohdaten; die Runtime-Adapter kodieren selbst)."""
+
+    data: bytes = field(repr=False)
+    mime_type: str = "image/png"
+
+    def __post_init__(self) -> None:
+        if not self.data:
+            raise ValueError("Leeres Bild")
+        if not self.mime_type.startswith("image/"):
+            raise ValueError(f"Kein Bild-MIME-Typ: {self.mime_type}")
+
+
+@dataclass(frozen=True, slots=True)
 class Message:
     role: Role
     content: str = ""
     tool_calls: tuple[ToolCall, ...] = ()
     tool_call_id: str | None = None
+    images: tuple[ImageInput, ...] = ()
 
     @classmethod
     def system(cls, content: str) -> Message:
         return cls(Role.SYSTEM, content)
 
     @classmethod
-    def user(cls, content: str) -> Message:
-        return cls(Role.USER, content)
+    def user(cls, content: str, images: Sequence[ImageInput] = ()) -> Message:
+        return cls(Role.USER, content, images=tuple(images))
 
     @classmethod
     def assistant(cls, content: str = "", tool_calls: Sequence[ToolCall] = ()) -> Message:
@@ -159,6 +174,9 @@ class ChatResponse:
     usage: TokenUsage
     model: str
     latency_ms: float
+    runtime_stats: Mapping[str, float] = field(default_factory=dict, hash=False)
+    """Von der Runtime *gemeldete* Kennzahlen dieses Aufrufs (z. B. llama.cpp ``timings``:
+    ``prompt_per_second``, ``predicted_per_second``). Leer, wenn die Runtime nichts meldet."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -214,6 +232,24 @@ class ModelProvider(abc.ABC):
                 params=GenerationParams(temperature=0.0, max_tokens=1),
             ),
         )
+
+    async def runtime_info(self, model: ModelMetadata | None = None) -> dict[str, Any]:
+        """Von der Runtime gemeldete Fakten (Typ, Version, Kontext, Modellgröße, Modalitäten).
+
+        Nur, was die Runtime tatsächlich liefert – fehlende Angaben bleiben weg.
+        """
+        return {}
+
+    async def unload(self, model: ModelMetadata) -> None:
+        """Entlädt das Modell aus dem Speicher (nur Runtimes mit Lade-API, z. B. Ollama)."""
+        raise NotImplementedError(f"{self.name}: Runtime unterstützt kein Entladen")
+
+    async def load(self, model: ModelMetadata) -> dict[str, float]:
+        """Lädt das Modell explizit; liefert von der Runtime gemeldete Zeiten (Sekunden).
+
+        Nur für Runtimes mit Lade-API. Die Wanduhrzeit misst der Aufrufer selbst.
+        """
+        raise NotImplementedError(f"{self.name}: Runtime hat keine Lade-API")
 
     async def aclose(self) -> None:  # noqa: B027 – optionaler Hook
         """Gibt Ressourcen (Verbindungen) frei."""

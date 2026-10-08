@@ -15,6 +15,7 @@ import asyncio
 import sys
 from pathlib import Path
 
+from evaluation.benchmark_runner import attach_profiles
 from models.inference import InferenceEngine
 from router import (
     Latency,
@@ -31,6 +32,11 @@ async def _main(args: argparse.Namespace) -> int:
     engine = InferenceEngine.from_toml(args.config)
     try:
         resources = await detect_resources()
+        if not args.no_profiles:
+            store = await attach_profiles(engine.models, args.profiles)
+            for model in engine.models.list():
+                print(f"Daten {model.name}: {engine.models.data_status(model.name).describe()}")
+            print(f"(Profile: {store.root})")
 
         def gb(value: float | None) -> str:
             return "unbekannt" if value is None else f"{value:.1f} GB"
@@ -67,6 +73,10 @@ def main() -> None:
     parser.add_argument("--vision", action="store_true")
     parser.add_argument("--tools", action="store_true", help="Aufgabe braucht Tool-Calling")
     parser.add_argument("--latency", choices=[x.value for x in Latency], default="normal")
+    parser.add_argument("--profiles", type=Path, help="Verzeichnis der Benchmark-Profile")
+    parser.add_argument(
+        "--no-profiles", action="store_true", help="nur Konfigurationswerte (alles UNMEASURED)"
+    )
     args = parser.parse_args()
     args.config = Path(args.config).expanduser()
     sys.exit(asyncio.run(_main(args)))

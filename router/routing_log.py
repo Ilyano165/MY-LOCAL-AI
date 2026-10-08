@@ -39,6 +39,7 @@ def format_decision(decision: RoutingDecision) -> str:
         f"category = {c.category.name}" + (f" ({c.secondary.name})" if c.secondary else ""),
         f"complexity = {c.complexity.name}",
         f"selected_model = {decision.model.name}",
+        f"data = {decision.data_status.get(decision.model.name, 'UNMEASURED')}",
         f'reason = "{decision.reason}"',
         f"classifier = {c.classifier} (confidence {c.confidence:.2f})",
     ]

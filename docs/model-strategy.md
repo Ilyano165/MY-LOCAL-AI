@@ -114,7 +114,8 @@ zeigen; unter Q4 nur für FAST-Rolle.
    (GGUF/safetensors – **keine** Pickle-Formate, siehe `security.md`), Checksumme.
 2. Speicherbedarf nach §6 gegen Zielhardware rechnen.
 3. Capability-Check (automatisierter Integrationstest): Tool-Calling, JSON-Schema-Output,
-   Kontextlänge, Tokenizer.
+   Kontextlänge, Tokenizer. Danach `python -m scripts.benchmark_models --model <name>`:
+   ersetzt die Konfigurationsannahmen durch gemessene Werte (`docs/benchmarking.md`).
 4. Eval-Suite der vorgesehenen Rolle laufen lassen; Ergebnis gegen aktuelles Modell vergleichen.
 5. Nur bei messbarem Gewinn (oder gleicher Qualität bei klar besserer Latenz) in die
    Registry übernehmen. Entscheidung mit Eval-Report in `docs/` festhalten.

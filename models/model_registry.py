@@ -16,6 +16,7 @@ from typing import Any
 
 from models.base import ModelNotFoundError, NoSuitableModelError
 from models.capabilities import ModelMetadata, TaskRequirements, TaskType
+from models.measured import MeasuredOverrides, MeasurementSource, apply_overrides
 
 
 class ModelRegistry:
@@ -25,11 +26,38 @@ class ModelRegistry:
     Konfigurationen bekommen jeweils einen eigenen Registry.
     """
 
-    def __init__(self, models: Iterable[ModelMetadata] = ()) -> None:
+    def __init__(
+        self,
+        models: Iterable[ModelMetadata] = (),
+        *,
+        measurements: MeasurementSource | None = None,
+    ) -> None:
         self._models: dict[str, ModelMetadata] = {}
         self._lock = threading.RLock()
+        self.measurements = measurements
         for model in models:
             self.register(model)
+
+    # ------------------------------------------------------------------ Messdaten
+
+    def set_measurements(self, source: MeasurementSource | None) -> None:
+        """Quelle gemessener Profile (z. B. ``ProfileStore``); ``None`` = nur Konfiguration."""
+        self.measurements = source
+
+    def data_status(self, name: str) -> MeasuredOverrides:
+        """Messstatus eines Modells; ohne Profil ausdrücklich ``UNMEASURED``."""
+        model = self.get(name)
+        if self.measurements is None:
+            return MeasuredOverrides.unmeasured("keine Benchmark-Quelle konfiguriert")
+        overrides = self.measurements.overrides_for(model)
+        return overrides or MeasuredOverrides.unmeasured("kein Benchmark-Profil vorhanden")
+
+    def effective(self, name: str) -> ModelMetadata:
+        """Metadaten mit gemessenen Werten anstelle der konfigurierten (falls vorhanden)."""
+        return apply_overrides(self.get(name), self.data_status(name))
+
+    def list_effective(self, *, provider: str | None = None) -> builtins.list[ModelMetadata]:
+        return [self.effective(m.name) for m in self.list(provider=provider)]
 
     # ------------------------------------------------------------------ CRUD
 
@@ -87,7 +115,9 @@ class ModelRegistry:
         req = TaskRequirements.coerce(task)
         excluded = set(exclude)
         candidates = [
-            m for m in self.list() if m.name not in excluded and not m.unmet_requirements(req)
+            m
+            for m in self.list_effective()
+            if m.name not in excluded and not m.unmet_requirements(req)
         ]
         # Stabil sortieren: erst Name aufsteigend, dann Ranking absteigend → Gleichstand
         # wird alphabetisch und damit reproduzierbar aufgelöst.
@@ -106,7 +136,11 @@ class ModelRegistry:
         ranked = self.rank_for(req, exclude=excluded)
         if ranked:
             return ranked[0]
-        reasons = {m.name: m.unmet_requirements(req) for m in self.list() if m.name not in excluded}
+        reasons = {
+            m.name: m.unmet_requirements(req)
+            for m in self.list_effective()
+            if m.name not in excluded
+        }
         detail = "; ".join(f"{n}: {', '.join(r)}" for n, r in reasons.items()) or "Registry leer"
         raise NoSuitableModelError(f"Kein Modell für {req.task_type.value} geeignet ({detail})")
 

@@ -33,3 +33,24 @@ async def test_live_health(engine: InferenceEngine) -> None:
     await engine.aclose()
     failed = [r.to_dict() for r in reports if not r.healthy]
     assert not failed, failed
+
+
+async def test_live_benchmark(
+    engine: InferenceEngine, tmp_path_factory: pytest.TempPathFactory
+) -> None:
+    """Echter Benchmark-Lauf (kurz): erzeugt ein Profil mit echten Messwerten."""
+    from evaluation.benchmark_results import ProfileStore
+    from evaluation.benchmark_runner import ModelBenchmarkRunner
+    from evaluation.model_benchmark import BenchmarkOptions
+
+    store = ProfileStore(tmp_path_factory.mktemp("profiles"))
+    options = BenchmarkOptions(tasks=["chat", "short_analysis"], throughput_runs=1)
+    name = os.environ.get("NOVA_IT_MODEL")
+    outcomes = await ModelBenchmarkRunner(engine, store, options=options).run(
+        [name] if name else None
+    )
+    await engine.aclose()
+    assert all(o.ok for o in outcomes), [o.error for o in outcomes]
+    for o in outcomes:
+        assert o.profile is not None
+        assert o.profile.performance["tokens_per_second"].is_fact

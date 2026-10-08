@@ -66,5 +66,7 @@ Trockenlauf: `python -m scripts.route --config ~/.nova/models.toml "Aufgabe"`
 
 * Regeln sind auf Deutsch/Englisch zugeschnitten; Token-Zählung ist eine Schätzung.
 * Speichererkennung ist eine Momentaufnahme; bereits geladene Modelle belegen Speicher.
-* Fähigkeits- und Geschwindigkeitsangaben stammen aus der Konfiguration – sie müssen auf der
-  Zielhardware gemessen werden, sonst routet der Router nach falschen Annahmen.
+* Ohne Benchmark-Profil stammen Fähigkeits- und Geschwindigkeitsangaben aus der Konfiguration
+  (Annahmen). Mit Profil (`scripts/benchmark_models.py`, `evaluation.attach_profiles`) nutzt der
+  Router gemessene Werte; jede Begründung kennzeichnet „gemessen“ bzw. „konfiguriert –
+  UNMEASURED“, das Routing-Log enthält `data = MEASURED|PARTIAL|UNMEASURED`.

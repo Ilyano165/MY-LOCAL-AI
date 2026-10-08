@@ -10,6 +10,7 @@ API-Keys werden nur über den *Namen* einer Umgebungsvariable referenziert.
 
 from __future__ import annotations
 
+import base64
 import ipaddress
 import json
 import os
@@ -135,6 +136,135 @@ class OpenAICompatibleProvider(ModelProvider):
             detail=f"HTTP {response.status_code}: {self._error_text(response)}",
         )
 
+    @property
+    def base_url(self) -> str:
+        return str(self._client.base_url).rstrip("/")
+
+    async def runtime_info(self, model: ModelMetadata | None = None) -> dict[str, Any]:
+        """Fragt bekannte Info-Endpunkte ab (best effort, kurze Timeouts):
+
+        * llama.cpp: ``/props`` (Kontext, Modellpfad, Modalitäten, Build) und ``meta`` in
+          ``/v1/models`` (Parameter, Dateigröße, Trainingskontext)
+        * Ollama: ``/api/version`` und ``/api/ps`` (geladene Modelle, ``size_vram``)
+        """
+        info: dict[str, Any] = {"runtime": "openai-compatible", "sources": []}
+
+        async def get(path: str) -> Any:
+            try:
+                response = await self._client.get(path, timeout=5.0)
+            except httpx.HTTPError:
+                return None
+            if response.status_code != 200:
+                return None
+            try:
+                return response.json()
+            except ValueError:
+                return None
+
+        props = await get("/props")
+        if isinstance(props, dict) and ("default_generation_settings" in props or "n_ctx" in props):
+            info["runtime"] = "llama.cpp"
+            info["sources"].append("/props")
+            settings = props.get("default_generation_settings") or {}
+            n_ctx = settings.get("n_ctx", props.get("n_ctx"))
+            if isinstance(n_ctx, int):
+                info["n_ctx"] = n_ctx
+            for key in ("model_path", "total_slots", "build_info"):
+                if key in props:
+                    info[key] = props[key]
+            if isinstance(props.get("modalities"), dict):
+                info["modalities"] = {k: bool(v) for k, v in props["modalities"].items()}
+        models = await get(f"{self._api_prefix}/models")
+        if isinstance(models, dict) and isinstance(models.get("data"), list):
+            wanted = model.runtime_name if model else None
+            for entry in models["data"]:
+                if not isinstance(entry, dict):
+                    continue
+                if (
+                    wanted is not None
+                    and entry.get("id") not in (wanted, None)
+                    and len(models["data"]) > 1
+                ):
+                    continue
+                meta = entry.get("meta")
+                if isinstance(meta, dict):
+                    info["sources"].append(f"{self._api_prefix}/models meta")
+                    for src, dst in (
+                        ("n_params", "n_params"),
+                        ("size", "model_size_bytes"),
+                        ("n_ctx_train", "n_ctx_train"),
+                    ):
+                        if isinstance(meta.get(src), int):
+                            info[dst] = meta[src]
+                break
+        version = await get("/api/version")
+        if isinstance(version, dict) and "version" in version:
+            info["runtime"] = "ollama"
+            info["runtime_version"] = str(version["version"])
+            info["sources"].append("/api/version")
+            ps = await get("/api/ps")
+            if isinstance(ps, dict) and isinstance(ps.get("models"), list):
+                info["sources"].append("/api/ps")
+                loaded = None
+                for entry in ps["models"]:
+                    if (
+                        isinstance(entry, dict)
+                        and model is not None
+                        and entry.get("name")
+                        in (model.runtime_name, f"{model.runtime_name}:latest")
+                    ):
+                        loaded = entry
+                info["loaded"] = loaded is not None
+                if loaded is not None:
+                    for src, dst in (
+                        ("size", "model_size_bytes"),
+                        ("size_vram", "size_vram_bytes"),
+                        ("context_length", "n_ctx"),
+                    ):
+                        if isinstance(loaded.get(src), int):
+                            info[dst] = loaded[src]
+        return info
+
+    async def _is_ollama(self) -> bool:
+        try:
+            response = await self._client.get("/api/version", timeout=5.0)
+            return response.status_code == 200 and "version" in response.json()
+        except (httpx.HTTPError, ValueError):
+            return False
+
+    async def unload(self, model: ModelMetadata) -> None:
+        """Ollama: ``/api/generate`` mit ``keep_alive: 0`` entlädt das Modell sofort."""
+        if not await self._is_ollama():
+            raise NotImplementedError(f"{self.name}: Entladen nur für Ollama implementiert")
+        response = await self._request(
+            "POST",
+            "/api/generate",
+            json={"model": model.runtime_name, "keep_alive": 0},
+            timeout_s=60.0,
+        )
+        if response.status_code != 200:
+            raise ModelError(f"{self.name}: Entladen fehlgeschlagen ({response.status_code})")
+
+    async def load(self, model: ModelMetadata) -> dict[str, float]:
+        """Ollama: ``/api/generate`` ohne Prompt lädt das Modell; ``load_duration`` (ns)."""
+        if not await self._is_ollama():
+            raise NotImplementedError(f"{self.name}: Laden nur für Ollama implementiert")
+        response = await self._request(
+            "POST",
+            "/api/generate",
+            json={"model": model.runtime_name, "keep_alive": "10m", "stream": False},
+            timeout_s=600.0,
+        )
+        if response.status_code != 200:
+            raise ModelError(f"{self.name}: Laden fehlgeschlagen ({response.status_code})")
+        data = self._json(response)
+        stats: dict[str, float] = {}
+        for key in ("load_duration", "total_duration"):
+            value = data.get(key) if isinstance(data, dict) else None
+            if isinstance(value, int | float) and not isinstance(value, bool):
+                stats[f"{key}_s"] = value / 1e9
+        return stats
+
     async def aclose(self) -> None:
         await self._client.aclose()
 
@@ -207,7 +337,20 @@ class OpenAICompatibleProvider(ModelProvider):
 
     @staticmethod
     def _serialize_message(message: Message) -> dict[str, Any]:
-        out: dict[str, Any] = {"role": message.role.value, "content": message.content}
+        content: Any = message.content
+        if message.images:
+            # OpenAI-Format für multimodale Eingaben (llama.cpp mit mmproj, Ollama, vLLM)
+            content = [{"type": "text", "text": message.content}] + [
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:{img.mime_type};base64,"
+                        + base64.b64encode(img.data).decode("ascii")
+                    },
+                }
+                for img in message.images
+            ]
+        out: dict[str, Any] = {"role": message.role.value, "content": content}
         if message.tool_calls:
             out["tool_calls"] = [
                 {
@@ -303,10 +446,21 @@ class OpenAICompatibleProvider(ModelProvider):
             prompt_tokens=int(usage_raw.get("prompt_tokens") or 0),
             completion_tokens=int(usage_raw.get("completion_tokens") or 0),
         )
+        timings = data.get("timings")
+        runtime_stats = (
+            {
+                k: float(v)
+                for k, v in timings.items()
+                if isinstance(v, int | float) and not isinstance(v, bool)
+            }
+            if isinstance(timings, dict)
+            else {}
+        )
         return ChatResponse(
             message=Message.assistant(str(raw.get("content") or ""), tool_calls),
             finish_reason=finish,
             usage=usage,
             model=str(data.get("model") or model.runtime_name),
             latency_ms=latency_ms,
+            runtime_stats=runtime_stats,
         )

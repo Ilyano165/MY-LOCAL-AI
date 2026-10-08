@@ -104,6 +104,11 @@ implementieren → Tests → Fehler beheben → dokumentieren.
 
 ## Phase 8 – Evaluation-Ausbau
 
+> **Stand 2026-10-08: Model-Benchmarking umgesetzt** (`docs/benchmarking.md`): 8 Standardaufgaben
+> + Vision-Probe, getrennte Messung von Fähigkeit und Hardware-Leistung, Messstatus pro Wert,
+> Profile in `~/.nova/benchmarks`, Router bevorzugt Messdaten, `UNMEASURED` ohne Profil.
+> Offen: Lauf gegen echte Modelle auf Zielhardware, mehr Aufgaben je Bereich, Streaming-TTFT.
+
 > **Stand 2026-10-08: Verification Engine umgesetzt** (`evaluation/`): Strategien code/files/
 > research/math/text, unabhängige Checks, Urteilsregel ohne Vertrauen in Agent-Behauptungen,
 > Quality Score (intern, keine Wahrscheinlichkeit), Engine-Benchmark mit False-Accept-Gate,

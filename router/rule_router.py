@@ -15,6 +15,10 @@
    * Latenz ``batch`` → Qualität vor Geschwindigkeit; ``realtime`` → schon „basic“ genügt.
    * LONG_CONTEXT → Modelle mit reichlich Kontextreserve zuerst.
 
+Datengrundlage: gemessene Benchmark-Profile haben Vorrang vor Konfigurationswerten
+(``ModelRegistry.list_effective``). Jede Begründung nennt, ob die Fähigkeit **gemessen** oder
+nur **konfiguriert (UNMEASURED)** ist; ungemessene Werte werden nie als Messung ausgegeben.
+
 Jede Entscheidung wird mit Begründung, abgelehnten Kandidaten und Fallbacks protokolliert.
 """
 
@@ -23,6 +27,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from models.capabilities import CapabilityLevel, ModelMetadata, TaskType
+from models.measured import DataStatus, MeasuredOverrides
 from models.model_registry import ModelRegistry
 from router.availability import Availability, ModelAvailability
 from router.base import (
@@ -84,7 +89,8 @@ class RuleBasedRouter(ModelRouter):
 
     async def route(self, request: RoutingRequest) -> RoutingDecision:
         classification = await self.classifier.classify(request)
-        models = self.registry.list()
+        models = self.registry.list_effective()
+        data = {m.name: self.registry.data_status(m.name) for m in models}
         availability = await self.availability.check_all(models)
         candidates: list[ModelMetadata] = []
         rejected: list[Rejection] = []
@@ -115,15 +121,17 @@ class RuleBasedRouter(ModelRouter):
         )
         selected = ranked[0]
         notes = self._notes(selected, placements[selected.name])
+        notes.append(f"Daten {selected.name}: {data[selected.name].describe()}")
         decision = RoutingDecision(
             model=selected,
             classification=classification,
-            reason=self._reason(selected, ranked, classification, request),
+            reason=self._reason(selected, ranked, classification, request, data[selected.name]),
             fallbacks=ranked[1 : 1 + self.max_fallbacks],
             rejected=rejected,
             considered=[m.name for m in ranked],
             notes=notes,
             request=request,
+            data_status={name: d.status.value for name, d in data.items()},
         )
         if self.log is not None:
             self.log.record(decision)
@@ -202,14 +210,16 @@ class RuleBasedRouter(ModelRouter):
         ranked: Sequence[ModelMetadata],
         c: TaskClassification,
         request: RoutingRequest,
+        data: MeasuredOverrides | None = None,
     ) -> str:
         task_type = self._content_type(c)
         cap = capability(model, task_type)
         best = max(capability(m, task_type) for m in ranked)
         label = _CAP_LABEL[task_type]
         level = _LEVEL[round(cap)] if cap == int(cap) else f"{cap:.1f}"
+        level += ", " + _provenance(task_type, data)
         if len(ranked) == 1:
-            why = "einziges Modell, das alle Anforderungen erfüllt"
+            why = f"einziges Modell, das alle Anforderungen erfüllt ({label}: {level})"
         elif request.latency is Latency.BATCH or (cap >= best and c.complexity is Complexity.HIGH):
             why = f"stärkste {label}-Fähigkeit ({level}) unter {len(ranked)} geeigneten Modellen"
         elif cap >= best:
@@ -237,6 +247,23 @@ class RuleBasedRouter(ModelRouter):
                 f"{model.name} passt nicht in den VRAM – läuft voraussichtlich auf CPU/RAM"
             )
         return notes
+
+
+def _provenance(task_type: TaskType, data: MeasuredOverrides | None) -> str:
+    """„gemessen“ nur, wenn die verwendete Fähigkeit aus einem Benchmark-Profil stammt."""
+    if data is None or data.status in (DataStatus.UNMEASURED, DataStatus.STALE):
+        return "konfiguriert – UNMEASURED"
+    fields = {
+        TaskType.CODING: ("coding_capability",),
+        TaskType.REASONING: ("reasoning_capability",),
+        TaskType.VISION: ("vision_capability",),
+    }.get(task_type, ("reasoning_capability", "coding_capability"))
+    measured = [getattr(data, f) is not None for f in fields]
+    if all(measured):
+        return "gemessen"
+    if any(measured):
+        return "teilweise gemessen"
+    return "konfiguriert – UNMEASURED"
 
 
 def _gb(value: float | None) -> str:

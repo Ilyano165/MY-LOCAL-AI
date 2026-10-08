@@ -18,6 +18,10 @@ einen internen Quality Score. Sie ist in den Agenten integriert (FINALIZE) und w
 eigenen Benchmark mit False-Accept-Gate abgesichert. Noch offen: Eval-Suites für den
 *Agenten* mit echtem Modell (E2/E3) und Kalibrierung des Quality Scores gegen menschliche Urteile.
 
+Das **Model-Benchmarking** (`docs/benchmarking.md`) misst pro Modell Fähigkeit (8 Standardaufgaben,
+unabhängig bewertet) und Hardware-Leistung (Ladezeit, tok/s, Spitzen-VRAM/RAM) in echten Läufen.
+Der Router bevorzugt diese Profile; Modelle ohne Profil sind ausdrücklich `UNMEASURED`.
+
 ## 1. Ebenen
 
 | Ebene | Was wird gemessen | Beispiele für Metriken | Ab Phase |

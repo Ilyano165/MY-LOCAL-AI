@@ -171,6 +171,8 @@ class RoutingDecision:
     considered: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
     request: RoutingRequest | None = None
+    data_status: dict[str, str] = field(default_factory=dict)
+    """Modell → MEASURED/PARTIAL/STALE/UNMEASURED (Herkunft der Routing-Daten)."""
     id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat(timespec="seconds"))
 
@@ -202,6 +204,7 @@ class RoutingDecision:
             "considered": self.considered,
             "rejected": {r.model: list(r.reasons) for r in self.rejected},
             "notes": self.notes,
+            "data_status": self.data_status,
             "latency": self.request.latency.value if self.request else None,
         }
 
