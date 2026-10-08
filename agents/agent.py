@@ -222,6 +222,20 @@ class Agent:
             f"{len(result.guidance)} Präferenz(en)/Anweisung(en) abgerufen",
         )
 
+    def _report_routing_outcome(self, task: Task) -> None:
+        """Routing-Entscheidungen bekommen das (unabhängig geprüfte) Ergebnis zurück."""
+        router = self.engine.router
+        if router is None or task.final_result is None:
+            return
+        quality = (task.final_result.quality or {}).get("overall")
+        for decision_id in task.routing_ids:
+            router.record_outcome(
+                decision_id,
+                success=task.final_result.status == FinalStatus.SUCCESS,
+                verdict=task.final_result.status.value,
+                quality=quality,
+            )
+
     async def _store_outcome(self, task: Task) -> None:
         if self.memory is None or task.final_result is None:
             return
@@ -484,6 +498,7 @@ class Agent:
             FinalStatus.ABORTED: TaskStatus.ABORTED,
         }.get(status, TaskStatus.FAILED)
         self._event(task, Phase.FINALIZE, summary)
+        self._report_routing_outcome(task)
         await self._store_outcome(task)
         await self._save(task)
 

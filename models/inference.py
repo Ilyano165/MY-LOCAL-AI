@@ -13,7 +13,7 @@ import tomllib
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 from models.base import (
     ChatRequest,
@@ -103,6 +103,36 @@ class InferenceResult:
     response: ChatResponse
     model: ModelMetadata
     attempts: tuple[str, ...] = field(default=())  # versuchte Modelle in Reihenfolge
+    routing_id: str | None = None
+    """ID der Routing-Entscheidung (wenn ein Router gewählt hat) – für Ergebnis-Rückmeldung."""
+
+
+@dataclass(frozen=True, slots=True)
+class RoutedChoice:
+    model: ModelMetadata
+    fallbacks: list[ModelMetadata]
+    decision_id: str
+
+
+class Router(Protocol):
+    """Schnittstelle, über die ein Model Router (siehe ``router/``) die Auswahl übernimmt.
+
+    Als Protocol hier definiert, damit ``models`` nicht von ``router`` abhängt."""
+
+    async def route_chat(
+        self, request: ChatRequest, requirements: TaskRequirements | None
+    ) -> RoutedChoice: ...
+
+    def report_failure(self, model_name: str, reason: str) -> None: ...
+
+    def record_outcome(
+        self,
+        decision_id: str,
+        *,
+        success: bool,
+        verdict: str | None = None,
+        quality: float | None = None,
+    ) -> None: ...
 
 
 class InferenceEngine:
@@ -112,12 +142,14 @@ class InferenceEngine:
         providers: ProviderRegistry,
         *,
         default_timeout_s: float = 120.0,
+        router: Router | None = None,
     ) -> None:
         if default_timeout_s <= 0:
             raise ValueError("default_timeout_s muss > 0 sein")
         self.models = models
         self.providers = providers
         self.default_timeout_s = default_timeout_s
+        self.router = router
 
     def validate(self) -> list[str]:
         """Konsistenzprüfung: verweist jedes Modell auf einen registrierten Provider?"""
@@ -165,6 +197,8 @@ class InferenceEngine:
         Mit ``fallback=True`` (nur bei Auswahl per Aufgabe) wird bei
         Nichterreichbarkeit/Timeout das nächstbeste geeignete Modell versucht.
         """
+        if model is None and self.router is not None:
+            return await self._chat_routed(request, task, fallback)
         chosen = self.resolve(model=model, task=task)
         if not fallback or model is not None:
             response = await self.run(chosen, request)
@@ -186,6 +220,32 @@ class InferenceEngine:
                 raise ProviderUnavailableError(
                     "Alle geeigneten Modelle fehlgeschlagen: " + " | ".join(errors)
                 ) from None
+
+    async def _chat_routed(
+        self, request: ChatRequest, task: TaskRequirements | TaskType | str | None, fallback: bool
+    ) -> InferenceResult:
+        """Auswahl durch den Router; Fallbacks sind ebenfalls vom Router geprüft (verfügbar,
+        passend). Ausfälle werden dem Router gemeldet, damit er das Modell vorerst meidet."""
+        assert self.router is not None
+        requirements = TaskRequirements.coerce(task) if task is not None else None
+        choice = await self.router.route_chat(request, requirements)
+        candidates = [choice.model, *choice.fallbacks] if fallback else [choice.model]
+        attempts: list[str] = []
+        errors: list[str] = []
+        for candidate in candidates:
+            attempts.append(candidate.name)
+            try:
+                response = await self.run(candidate, request)
+                return InferenceResult(response, candidate, tuple(attempts), choice.decision_id)
+            except RETRYABLE_ERRORS as exc:
+                logger.warning("Modell %s fehlgeschlagen: %s", candidate.name, exc)
+                errors.append(f"{candidate.name}: {exc}")
+                self.router.report_failure(candidate.name, f"{type(exc).__name__}: {exc}")
+                if not fallback:
+                    raise
+        raise ProviderUnavailableError(
+            "Alle vom Router gewählten Modelle fehlgeschlagen: " + " | ".join(errors)
+        )
 
     async def aclose(self) -> None:
         await self.providers.aclose()

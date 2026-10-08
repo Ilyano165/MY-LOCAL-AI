@@ -160,6 +160,14 @@ class Executor:
                 outcome.errors.append(message)
                 return outcome
 
+            if result.routing_id and result.routing_id not in task.routing_ids:
+                task.routing_ids.append(result.routing_id)
+                task.observe(
+                    "router",
+                    f"Modell {result.model.name} (Routing {result.routing_id})",
+                    subtask.id,
+                    attempt,
+                )
             reply = result.response.message
             if reply.content:
                 task.observe("model", reply.content, subtask.id, attempt)

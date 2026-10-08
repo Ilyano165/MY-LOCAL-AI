@@ -282,6 +282,8 @@ class Task:
     recalled_memories: list[dict[str, Any]] = field(default_factory=list)
     """Beim Start abgerufene Erinnerungen (id, layer, kind, content, score)."""
     memory_context: str = ""
+    routing_ids: list[str] = field(default_factory=list)
+    """IDs der Routing-Entscheidungen dieses Laufs (Ergebnis wird beim Abschluss nachgetragen)."""
     verification_report: dict[str, Any] | None = None
     """Bericht der Verification Engine zum Gesamtergebnis (siehe evaluation/)."""
     """Daraus erzeugter Kontextblock für die Prompts von Planner und Executor."""
@@ -354,6 +356,7 @@ class Task:
             recalled_memories=list(data.get("recalled_memories", [])),
             memory_context=str(data.get("memory_context", "")),
             verification_report=data.get("verification_report"),
+            routing_ids=list(data.get("routing_ids", [])),
             created_at=data.get("created_at", utc_now()),
             updated_at=data.get("updated_at", utc_now()),
         )

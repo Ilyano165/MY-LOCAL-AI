@@ -44,6 +44,12 @@ implementieren → Tests → Fehler beheben → dokumentieren.
 
 ## Phase 3 – Model Router
 
+> **Stand 2026-10-08: umgesetzt** (`router/`): regelbasierte Klassifikation (6 Kategorien,
+> Komplexität), harte Filter (Verfügbarkeit, VRAM/RAM, Kontext, Tools, Fähigkeit), Rangfolge
+> nach Komplexität und Latenz, Routing Logs mit Ergebnis-Rückmeldung, LLM-/Hybrid-Klassifikator,
+> Engine- und Agent-Integration. Offen: gelabelter Router-Datensatz (≥ 100 Fälle) mit Messung,
+> Kalibrierung der Fähigkeitsangaben auf echter Hardware, gelernter Router.
+
 - Regelbasierter Klassifikator (Aufgabe → Rolle), Auflösung (Rolle → Modell) mit Capability-Filter und Fallback-Kette
 - Routing-Entscheidungen im Trace
 - Gelabelter Router-Testdatensatz (≥ 100 Beispiele) in `evaluation/datasets/`
