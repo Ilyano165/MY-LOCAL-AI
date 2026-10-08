@@ -124,6 +124,12 @@ implementieren → Tests → Fehler beheben → dokumentieren.
 
 ## Phase 9 – UI
 
+> **Stand 2026-10-08: erste Version umgesetzt** (`api/`, siehe `api/README.md`): FastAPI-Schicht
+> (`/chat`, `/chat/stream`, `/agent/run`, `/agent/stop`, Status-Endpunkte, Verlauf, Settings),
+> Web-UI ohne Build-Schritt (Chat mit Streaming, Stop, Markdown, Code-Kopieren, Anhänge per
+> Drag & Drop, Verlauf, Settings, System-/Modell-/Router-Status, responsive), Development Mode
+> ohne Modell. Offen: Tool-Bestätigungsdialog, Memory-/Wissensbasis-Verwaltung, Live-Trace.
+
 - Lokale API (FastAPI, nur `127.0.0.1`, Token-Auth)
 - Web-UI: Chat, Live-Trace (Schritte, Tools, Routing), Tool-Bestätigungen, Memory-Verwaltung, Wissensbasis-Verwaltung
 - **Abnahme:** Alle CLI-Funktionen in der UI nutzbar; Bestätigungsdialoge funktionieren

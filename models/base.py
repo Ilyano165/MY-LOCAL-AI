@@ -8,7 +8,7 @@ der Anwendung bleibt unverändert.
 from __future__ import annotations
 
 import abc
-from collections.abc import Mapping, Sequence
+from collections.abc import AsyncIterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
@@ -180,6 +180,23 @@ class ChatResponse:
 
 
 @dataclass(frozen=True, slots=True)
+class StreamChunk:
+    """Teil einer gestreamten Antwort.
+
+    ``delta`` ist neuer Text. Der letzte Chunk trägt ``finish_reason`` und – falls die Runtime
+    sie meldet – ``usage``/``runtime_stats``. ``streamed=False`` heißt: die Runtime/der Provider
+    kann nicht streamen, die ganze Antwort kam in einem Stück (ehrlich gekennzeichnet).
+    """
+
+    delta: str = ""
+    finish_reason: FinishReason | None = None
+    usage: TokenUsage | None = None
+    runtime_stats: Mapping[str, float] = field(default_factory=dict, hash=False)
+    model: str = ""
+    streamed: bool = True
+
+
+@dataclass(frozen=True, slots=True)
 class ProviderHealth:
     """Zustand der Runtime selbst (nicht eines einzelnen Modells)."""
 
@@ -231,6 +248,20 @@ class ModelProvider(abc.ABC):
                 messages=(Message.user("ping"),),
                 params=GenerationParams(temperature=0.0, max_tokens=1),
             ),
+        )
+
+    async def stream(
+        self, model: ModelMetadata, request: ChatRequest
+    ) -> AsyncIterator[StreamChunk]:
+        """Gestreamte Antwort. Standard: kein echtes Streaming – eine Antwort als ein Chunk."""
+        response = await self.chat(model, request)
+        yield StreamChunk(
+            delta=response.message.content,
+            finish_reason=response.finish_reason,
+            usage=response.usage,
+            runtime_stats=response.runtime_stats,
+            model=response.model,
+            streamed=False,
         )
 
     async def runtime_info(self, model: ModelMetadata | None = None) -> dict[str, Any]:

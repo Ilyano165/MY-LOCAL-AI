@@ -1,0 +1,46 @@
+"""Konfiguration der NOVA API (Kommandozeile/Umgebung, keine Secrets im Code)."""
+
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass, field
+from pathlib import Path
+
+
+def default_data_dir() -> Path:
+    env = os.environ.get("NOVA_DATA_DIR")
+    return Path(env).expanduser() if env else Path.home() / ".nova"
+
+
+@dataclass
+class ApiConfig:
+    models_config: Path | None = None
+    """Modellkonfiguration (TOML). Ohne Datei nur im Development Mode zulässig."""
+    dev_mode: bool = False
+    """UI startet auch ohne Konfiguration/Modell – zeigt dann klar „No local model available.“"""
+    data_dir: Path = field(default_factory=default_data_dir)
+    router: str = "rules"
+    """``rules`` (Standard) oder ``learned`` (nur mit trainiertem Ranker)."""
+    learned_ranker: Path | None = None
+    api_token_env: str | None = "NOVA_API_TOKEN"
+    """Name der Umgebungsvariable mit optionalem API-Token (nie der Wert selbst)."""
+    max_attachment_bytes: int = 10 * 1024 * 1024
+    max_text_attachment_chars: int = 200_000
+
+    def __post_init__(self) -> None:
+        if self.router not in ("rules", "learned"):
+            raise ValueError("router muss 'rules' oder 'learned' sein")
+        if self.models_config is None and not self.dev_mode:
+            raise ValueError(
+                "Keine Modellkonfiguration angegeben (--config). Für einen Start ohne Modell "
+                "den Development Mode verwenden (--dev)."
+            )
+        if self.models_config is not None:
+            self.models_config = Path(self.models_config).expanduser()
+            if not self.models_config.is_file() and not self.dev_mode:
+                raise ValueError(f"Modellkonfiguration nicht gefunden: {self.models_config}")
+        self.data_dir = Path(self.data_dir).expanduser()
+
+    @property
+    def api_token(self) -> str | None:
+        return os.environ.get(self.api_token_env) if self.api_token_env else None

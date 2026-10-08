@@ -10,7 +10,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import tomllib
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import AsyncIterator, Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
@@ -25,6 +25,7 @@ from models.base import (
     NoSuitableModelError,
     ProviderNotRegisteredError,
     ProviderUnavailableError,
+    StreamChunk,
 )
 from models.capabilities import ModelMetadata, TaskRequirements, TaskType
 from models.local_provider import OpenAICompatibleProvider
@@ -247,6 +248,53 @@ class InferenceEngine:
         raise ProviderUnavailableError(
             "Alle vom Router gewählten Modelle fehlgeschlagen: " + " | ".join(errors)
         )
+
+    async def stream(
+        self, candidates: Sequence[ModelMetadata], request: ChatRequest
+    ) -> AsyncIterator[tuple[ModelMetadata, StreamChunk]]:
+        """Streamt die Antwort des ersten funktionierenden Kandidaten.
+
+        Fallback auf den nächsten Kandidaten **nur vor dem ersten Chunk** (danach wäre die
+        Antwort bereits teilweise ausgeliefert). Ausfälle werden dem Router gemeldet.
+        Zeitlimit: bis zum ersten Chunk ``timeout_s``; danach je Chunk dasselbe Limit.
+        """
+        if not candidates:
+            raise NoSuitableModelError("Keine Modelle zum Streamen angegeben")
+        timeout = request.timeout_s or self.default_timeout_s
+        errors: list[str] = []
+        for candidate in candidates:
+            provider = self.providers.get(candidate.provider)
+            iterator = provider.stream(candidate, request).__aiter__()
+            try:
+                first = await asyncio.wait_for(iterator.__anext__(), timeout=timeout)
+            except StopAsyncIteration:
+                errors.append(f"{candidate.name}: leere Antwort")
+                continue
+            except (ModelError, TimeoutError) as exc:
+                if isinstance(exc, ModelError) and not isinstance(exc, RETRYABLE_ERRORS):
+                    raise
+                message = (
+                    f"keine Antwort innerhalb von {timeout:.1f}s"
+                    if isinstance(exc, TimeoutError)
+                    else str(exc)
+                )
+                logger.warning("Modell %s fehlgeschlagen: %s", candidate.name, message)
+                errors.append(f"{candidate.name}: {message}")
+                if self.router is not None:
+                    self.router.report_failure(candidate.name, message)
+                continue
+            yield candidate, first
+            while True:
+                try:
+                    chunk = await asyncio.wait_for(iterator.__anext__(), timeout=timeout)
+                except StopAsyncIteration:
+                    return
+                except TimeoutError as exc:
+                    raise ModelTimeoutError(
+                        f"{candidate.name}: Stream stockt länger als {timeout:.1f}s"
+                    ) from exc
+                yield candidate, chunk
+        raise ProviderUnavailableError("Alle Modelle fehlgeschlagen: " + " | ".join(errors))
 
     async def aclose(self) -> None:
         await self.providers.aclose()

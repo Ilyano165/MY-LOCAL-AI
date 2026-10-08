@@ -3,7 +3,16 @@
 Vollständig lokale, persönliche KI-Plattform: lokales Open-Weight-Modell + Model Router +
 Planung + Tools + Memory + RAG + Context Management + Self-Verification + Evaluation + UI.
 
-**Status:** Phase 0 abgeschlossen; Model-Engine-Layer (`models/`), Agent Core (`agents/`), Tool-System (`tools/`), Memory (`memory/`), Verification Engine (`evaluation/`) und Model Router (`router/`) implementiert und getestet.
+**Status:** Phase 0 abgeschlossen; Model-Engine-Layer (`models/`), Agent Core (`agents/`), Tool-System (`tools/`), Memory (`memory/`), Verification Engine (`evaluation/`) Model Router (`router/`), Model-Benchmarking, Learned Router (nicht aktiviert) sowie lokale API
+und Web-Oberfläche (`api/`) implementiert und getestet.
+
+## Benutzen
+
+```bash
+uv pip install --python .venv/bin/python -e ".[ui]"
+.venv/bin/python -m api --config ~/.nova/models.toml   # → http://127.0.0.1:8765
+.venv/bin/python -m api --dev                           # ohne Modell (zeigt „No local model available.“)
+```
 
 ## Entwicklung
 
@@ -28,7 +37,7 @@ uv venv .venv && uv pip install --python .venv/bin/python -e ".[dev]"
 
 | Verzeichnis | Inhalt |
 |---|---|
-| `app/` | CLI, lokale API, UI, Verdrahtung |
+| `api/` | Lokale NOVA API (FastAPI) und Web-Oberfläche |
 | `core/` | Interfaces, Datentypen, Fehler, Config, Logging |
 | `models/` | ModelProvider-Adapter, Modell-Registry (keine Gewichte) |
 | `router/` | Model Router |

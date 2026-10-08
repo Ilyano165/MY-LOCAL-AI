@@ -15,7 +15,7 @@ import ipaddress
 import json
 import os
 import time
-from collections.abc import Mapping
+from collections.abc import AsyncIterator, Mapping
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -35,6 +35,7 @@ from models.base import (
     ProviderHealth,
     ProviderUnavailableError,
     Role,
+    StreamChunk,
     TokenUsage,
     ToolCall,
     ToolSpec,
@@ -106,6 +107,86 @@ class OpenAICompatibleProvider(ModelProvider):
         latency_ms = (time.perf_counter() - started) * 1000
         self._raise_for_status(response, model)
         return self._parse_chat(response, model, latency_ms)
+
+    async def stream(
+        self, model: ModelMetadata, request: ChatRequest
+    ) -> AsyncIterator[StreamChunk]:
+        """Server-Sent Events von ``/chat/completions`` mit ``stream: true``.
+
+        Mit Tools wird nicht gestreamt (Tool-Aufrufe kommen fragmentiert) – dann eine Antwort
+        als ein Chunk mit ``streamed=False``.
+        """
+        if request.tools:
+            async for chunk in super().stream(model, request):
+                yield chunk
+            return
+        payload = self._build_payload(model, request)
+        payload["stream"] = True
+        payload["stream_options"] = {"include_usage": True}
+        timeout = request.timeout_s or self._timeout_s
+        path = f"{self._api_prefix}/chat/completions"
+        finish: FinishReason | None = None
+        usage: TokenUsage | None = None
+        stats: dict[str, float] = {}
+        served = model.runtime_name
+        try:
+            async with self._client.stream(
+                "POST", path, json=payload, timeout=httpx.Timeout(timeout)
+            ) as response:
+                if response.status_code >= 400:
+                    await response.aread()
+                    self._raise_for_status(response, model)
+                async for line in response.aiter_lines():
+                    if not line.startswith("data:"):
+                        continue
+                    data = line[5:].strip()
+                    if data == "[DONE]":
+                        break
+                    try:
+                        event = json.loads(data)
+                    except json.JSONDecodeError as exc:
+                        raise InvalidResponseError(f"{self.name}: ungültiges SSE-JSON") from exc
+                    if not isinstance(event, dict):
+                        continue
+                    if isinstance(event.get("error"), dict | str):
+                        raise ModelError(f"{self.name}/{model.name}: {event['error']}")
+                    served = str(event.get("model") or served)
+                    if isinstance(event.get("usage"), dict):
+                        u = event["usage"]
+                        usage = TokenUsage(
+                            int(u.get("prompt_tokens") or 0), int(u.get("completion_tokens") or 0)
+                        )
+                    if isinstance(event.get("timings"), dict):
+                        stats = {
+                            k: float(v)
+                            for k, v in event["timings"].items()
+                            if isinstance(v, int | float) and not isinstance(v, bool)
+                        }
+                    choices = event.get("choices") or []
+                    if not choices or not isinstance(choices[0], dict):
+                        continue
+                    choice = choices[0]
+                    reason = choice.get("finish_reason")
+                    if reason:
+                        try:
+                            finish = FinishReason(str(reason))
+                        except ValueError:
+                            finish = FinishReason.OTHER
+                    delta = (choice.get("delta") or {}).get("content")
+                    if delta:
+                        yield StreamChunk(delta=str(delta), model=served)
+        except httpx.TimeoutException as exc:
+            raise ModelTimeoutError(f"{self.name}: Zeitlimit überschritten ({path})") from exc
+        except httpx.TransportError as exc:
+            raise ProviderUnavailableError(
+                f"{self.name}: Runtime nicht erreichbar ({type(exc).__name__}: {exc})"
+            ) from exc
+        yield StreamChunk(
+            finish_reason=finish or FinishReason.STOP,
+            usage=usage,
+            runtime_stats=stats,
+            model=served,
+        )
 
     async def list_models(self) -> list[str]:
         response = await self._request("GET", f"{self._api_prefix}/models")
