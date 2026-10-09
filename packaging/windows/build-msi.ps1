@@ -10,7 +10,8 @@
 param(
   [string]$Version = "",
   [string]$SourceDir = "dist\NOVA",
-  [string]$OutDir = "dist"
+  [string]$OutDir = "dist",
+  [switch]$SkipValidation
 )
 $ErrorActionPreference = "Stop"
 $root = Resolve-Path (Join-Path $PSScriptRoot "..\..")
@@ -37,7 +38,17 @@ $msi = Join-Path (Resolve-Path $OutDir).Path "NOVA-$Version-x64.msi"
   -d "Version=$Version" `
   -d "SourceDir=$source" `
   -d "NoticeRtf=$root\packaging\windows\notice.rtf" `
-  -sice ICE38 -sice ICE64 -sice ICE91 `
   -o $msi
 if ($LASTEXITCODE -ne 0) { throw "wix build failed with exit code $LASTEXITCODE" }
 Write-Host "Built $msi"
+
+# ICE-Validierung (Windows Installer Internal Consistency Evaluators). Unterdrückt sind nur
+# Regeln, die für Pro-Benutzer-Installationen in %LOCALAPPDATA% nicht passen:
+#   ICE38/ICE64 – Komponenten im Benutzerprofil sollen HKCU-Schlüsselpfade/RemoveFolder haben;
+#                 die automatisch eingesammelten Dateien (Files) haben Datei-Schlüsselpfade
+#   ICE91       – Warnung zu Dateien in Profilordnern bei Pro-Benutzer-Paketen
+if (-not $SkipValidation) {
+  & wix msi validate -sice ICE38 -sice ICE64 -sice ICE91 $msi
+  if ($LASTEXITCODE -ne 0) { throw "MSI validation (ICE) failed with exit code $LASTEXITCODE" }
+  Write-Host "ICE validation passed"
+}
