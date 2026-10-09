@@ -19,6 +19,9 @@ ui = [
 e2e = [
     "playwright>=1.48",
 ]
+build = [
+    "pyinstaller>=6.10",  # nur Release-Build (Windows-Paket)
+]
 dev = [
     "openai>=1.40",  # nur Tests: prüft die OpenAI-Kompatibilität mit dem offiziellen Client
     "pytest>=8",

@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  NOVA – Windows Installer (WiX Toolset v5.0.2, siehe docs/windows-release-plan.md §2).
+
+  Gebaut von build-msi.ps1:
+    wix build nova.wxs -arch x64 -ext WixToolset.UI.wixext -d Version=X.Y.Z -d SourceDir=…\dist\NOVA
+
+  Pro Benutzer, ohne Administratorrechte:
+    Programmdateien  %LOCALAPPDATA%\Programs\NOVA   (gehören dem MSI, werden ersetzt/entfernt)
+    Benutzerdaten    %LOCALAPPDATA%\NOVA            (gehören NICHT zum MSI – bleiben bei Upgrade,
+                                                     Reparatur und Deinstallation erhalten;
+                                                     löschen nur bewusst: `nova data purge`)
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package Name="NOVA"
+           Manufacturer="NOVA"
+           Version="$(var.Version)"
+           UpgradeCode="872F4C49-83EC-40A2-8432-D306FA693A1B"
+           Scope="perUser"
+           Language="1033"
+           Compressed="yes">
+
+    <SummaryInformation Description="NOVA $(var.Version) – local AI platform" />
+
+    <!-- Saubere Upgrades: alte Version vollständig entfernen, dann neue installieren -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version of NOVA is already installed. Uninstall it first if you really want to go back to version $(var.Version)." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <!-- Systemvoraussetzungen: klare Meldung statt kryptischem Fehler -->
+    <Launch Condition="Installed OR VersionNT64"
+            Message="NOVA requires a 64-bit version of Windows 10 or Windows 11." />
+    <Launch Condition="Installed OR VersionNT64 &gt;= 603"
+            Message="NOVA requires Windows 10 or Windows 11 (64-bit). This Windows version is not supported." />
+
+    <Property Id="ARPNOMODIFY" Value="0" />
+    <Property Id="ARPHELPLINK" Value="https://github.com/ilyano165/my-local-ai" />
+    <Property Id="ARPCOMMENTS" Value="User data in %LOCALAPPDATA%\NOVA is kept when NOVA is uninstalled." />
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="LocalProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="NOVA" />
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="NovaMenuFolder" Name="NOVA" />
+    </StandardDirectory>
+    <StandardDirectory Id="DesktopFolder" />
+
+    <!-- Programmordner aus PyInstaller (dist\NOVA); der Launcher braucht eine feste Id -->
+    <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
+      <Files Include="$(var.SourceDir)\**">
+        <Exclude Files="$(var.SourceDir)\nova-launcher.exe" />
+      </Files>
+      <Component Id="LauncherComponent">
+        <File Id="LauncherExe" Source="$(var.SourceDir)\nova-launcher.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="InstallFolderCleanup" Guid="6F0C2B1E-6F3B-4C1D-9C55-2E1D5B6A9A01">
+        <RemoveFolder Id="RemoveInstallFolder" On="uninstall" />
+        <RemoveFolder Id="RemoveLocalProgramsFolder" Directory="LocalProgramsFolder" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\NOVA" Name="InstallFolder" Type="string"
+                       Value="[INSTALLFOLDER]" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <Component Id="StartMenuShortcuts" Directory="NovaMenuFolder" Guid="0B7A3C52-1E4D-4F7B-8A2C-7C3F1D9E4B10">
+      <Shortcut Id="NovaShortcut" Name="NOVA" Description="Start NOVA and open it in the browser"
+                Target="[INSTALLFOLDER]nova-launcher.exe" WorkingDirectory="INSTALLFOLDER" />
+      <Shortcut Id="NovaStopShortcut" Name="Stop NOVA service" Description="Stop the NOVA background service"
+                Target="[INSTALLFOLDER]nova-launcher.exe" Arguments="stop" WorkingDirectory="INSTALLFOLDER" />
+      <RemoveFolder Id="RemoveNovaMenuFolder" On="uninstall" />
+      <RegistryValue Root="HKCU" Key="Software\NOVA" Name="StartMenu" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <Component Id="DesktopShortcutComponent" Directory="DesktopFolder" Guid="C2E5A9D4-3B1F-4E6A-9D7C-5A8B2F1E6C33">
+      <Shortcut Id="NovaDesktopShortcut" Name="NOVA" Description="Start NOVA and open it in the browser"
+                Target="[INSTALLFOLDER]nova-launcher.exe" WorkingDirectory="INSTALLFOLDER" />
+      <RegistryValue Root="HKCU" Key="Software\NOVA" Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <Component Id="AutostartComponent" Directory="INSTALLFOLDER" Guid="9D4B7E21-6C3A-4F58-B1E2-3A7C5D9F8E44">
+      <RegistryValue Root="HKCU" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="NOVA"
+                     Type="string" Value="&quot;[INSTALLFOLDER]nova-launcher.exe&quot; start --quiet" KeyPath="yes" />
+    </Component>
+
+    <Feature Id="Main" Title="NOVA" Description="NOVA program files and Start Menu entries." Level="1"
+             AllowAbsent="no" Display="expand">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="StartMenuShortcuts" />
+      <Feature Id="DesktopShortcut" Title="Desktop shortcut" Description="Create a NOVA shortcut on the desktop." Level="1000">
+        <ComponentRef Id="DesktopShortcutComponent" />
+      </Feature>
+      <Feature Id="Autostart" Title="Start with Windows" Description="Start the NOVA background service when you sign in." Level="1000">
+        <ComponentRef Id="AutostartComponent" />
+      </Feature>
+    </Feature>
+
+    <!--
+      Laufenden Hintergrunddienst vor Reparatur/Upgrade/Deinstallation beenden, damit keine
+      Dateien gesperrt sind. Nutzt den bereits installierten Launcher (bei Upgrade: den der alten
+      Version). Fehler werden ignoriert – läuft kein Dienst, ist nichts zu tun.
+    -->
+    <CustomAction Id="StopNovaService" Directory="INSTALLFOLDER"
+                  ExeCommand="&quot;[INSTALLFOLDER]nova-launcher.exe&quot; stop --quiet"
+                  Execute="immediate" Return="ignore" />
+    <InstallExecuteSequence>
+      <Custom Action="StopNovaService" Before="InstallValidate"
+              Condition="Installed OR WIX_UPGRADE_DETECTED" />
+    </InstallExecuteSequence>
+
+    <ui:WixUI Id="WixUI_FeatureTree" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.NoticeRtf)" />
+  </Package>
+</Wix>

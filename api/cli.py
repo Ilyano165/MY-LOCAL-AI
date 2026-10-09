@@ -141,10 +141,12 @@ def _health(port: int, timeout: float = 2.0) -> dict[str, Any] | None:
 
 
 def _server_command() -> list[str]:
-    if getattr(sys, "frozen", False):  # PyInstaller: nova.exe selbst
+    if getattr(sys, "frozen", False):  # PyInstaller: immer das Konsolenprogramm nova(.exe)
         exe = Path(sys.executable)
-        console = exe.with_name("nova.exe") if exe.name.lower() != "nova.exe" else exe
-        return [str(console if console.exists() else exe)]
+        console = exe.with_name("nova" + exe.suffix)
+        if not console.is_file():
+            raise SystemExit(f"{console.name} not found next to {exe.name} – reinstall NOVA")
+        return [str(console)]
     return [sys.executable, "-m", "api"]
 
 

@@ -36,3 +36,4 @@ htmlcov/
 
 # Lokale Modellkonfiguration (Vorlage: config/models.example.toml)
 /config/models.toml
+/.pw-browsers/

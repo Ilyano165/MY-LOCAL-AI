@@ -1,0 +1,145 @@
+# Windows-Release: Tests → PyInstaller → Rauchtest → MSI (WiX v5.0.2) → echter Installationstest
+# (Installation, Upgrade, Downgrade-Sperre, Reparatur, Deinstallation, Datenerhalt) → SHA-256.
+# „Gebaut“ und „getestet“ sind getrennte Schritte; der Bericht liegt in den Artefakten.
+# Bei Tags vX.Y.Z wird zusätzlich ein GitHub-Release mit MSI + Prüfsummen erstellt.
+name: windows-release
+
+on:
+  push:
+    branches: [main, "claude/**"]
+    tags: ["v*.*.*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      PYTHONUTF8: "1"
+      UV_FROZEN: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies (uv.lock)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "uv==0.11.32"
+          uv sync --extra ui --extra dev --extra build
+
+      - name: Version
+        id: version
+        run: |
+          $v = uv run python -c "import tomllib;print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])"
+          if ("${{ github.ref_type }}" -eq "tag" -and "${{ github.ref_name }}" -ne "v$v") {
+            throw "Tag ${{ github.ref_name }} does not match pyproject version $v"
+          }
+          $parts = $v.Split(".")
+          $next = "$($parts[0]).$($parts[1]).$([int]$parts[2] + 1)"
+          "version=$v" >> $env:GITHUB_OUTPUT
+          "next=$next" >> $env:GITHUB_OUTPUT
+
+      - name: Lint and type check
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+          uv run mypy
+
+      - name: Test suite on Windows (without browser E2E)
+        run: |
+          New-Item -ItemType Directory -Force logs | Out-Null
+          uv run pytest -m "not e2e" -q -p no:cacheprovider --junitxml=logs/pytest-windows.xml 2>&1 | Tee-Object logs/pytest-windows.log
+          if ($LASTEXITCODE -ne 0) { throw "pytest failed" }
+
+      - name: Build program folder (PyInstaller) + smoke test
+        run: |
+          uv run python packaging/build.py 2>&1 | Tee-Object logs/build-pyinstaller.log
+          if ($LASTEXITCODE -ne 0) { throw "PyInstaller build or smoke test failed" }
+
+      - name: Install WiX Toolset v5.0.2
+        run: |
+          dotnet tool install --global wix --version 5.0.2
+          wix extension add -g WixToolset.UI.wixext/5.0.2
+          wix --version
+
+      - name: Build MSI
+        run: |
+          packaging/windows/build-msi.ps1 -Version ${{ steps.version.outputs.version }} 2>&1 | Tee-Object logs/build-msi.log
+          # Zweites Paket nur für den Upgrade-Test: gleicher Build, höhere Versionsnummer
+          Copy-Item -Recurse dist/NOVA build/NOVA-next
+          Set-Content build/NOVA-next/_internal/VERSION "${{ steps.version.outputs.next }}"
+          packaging/windows/build-msi.ps1 -Version ${{ steps.version.outputs.next }} -SourceDir build/NOVA-next -OutDir build/upgrade-test 2>&1 | Tee-Object logs/build-msi-upgrade-test.log
+
+      - name: Installer test (install, upgrade, downgrade, repair, uninstall, data kept)
+        run: |
+          packaging/windows/test-install.ps1 `
+            -OldMsi dist/NOVA-${{ steps.version.outputs.version }}-x64.msi `
+            -NewMsi build/upgrade-test/NOVA-${{ steps.version.outputs.next }}-x64.msi `
+            -OldVersion ${{ steps.version.outputs.version }} `
+            -NewVersion ${{ steps.version.outputs.next }} `
+            -LogDir logs/install-test
+
+      - name: SHA-256 checksums
+        run: |
+          Get-ChildItem dist/*.msi | ForEach-Object {
+            "$((Get-FileHash $_ -Algorithm SHA256).Hash.ToLower())  $($_.Name)"
+          } | Out-File dist/SHA256SUMS.txt -Encoding ascii
+          Get-Content dist/SHA256SUMS.txt
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: nova-windows-${{ steps.version.outputs.version }}
+          path: |
+            dist/*.msi
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+
+      - name: Upload logs and test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nova-windows-logs
+          path: |
+            logs/
+            build/pyinstaller/**/warn-*.txt
+          if-no-files-found: warn
+
+  release:
+    if: github.ref_type == 'tag'
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: nova-windows-*
+          path: release
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd release
+          gh release create "${{ github.ref_name }}" --repo "${{ github.repository }}" \
+            --title "NOVA ${{ github.ref_name }}" --generate-notes \
+            nova-windows-[0-9]*/*.msi nova-windows-[0-9]*/SHA256SUMS.txt \
+            nova-windows-logs/install-test/install-test.md

@@ -1,11 +1,12 @@
 """Versionsnummer – einzige Quelle ist ``pyproject.toml``.
 
-Installiert (auch im PyInstaller-Paket, dort per ``copy_metadata``) liefert
-``importlib.metadata`` die Version; im Quellbaum wird ``pyproject.toml`` gelesen.
+Reihenfolge: im PyInstaller-Paket die vom Build-Skript geschriebene Datei ``VERSION``
+(``packaging/build.py``), im Quellbaum ``pyproject.toml``, installiert ``importlib.metadata``.
 """
 
 from __future__ import annotations
 
+import sys
 import tomllib
 from importlib import metadata
 from pathlib import Path
@@ -20,8 +21,18 @@ def _from_pyproject() -> str | None:
         return None
 
 
+def _from_bundle() -> str | None:
+    bundle = getattr(sys, "_MEIPASS", None)
+    if not getattr(sys, "frozen", False) or bundle is None:
+        return None
+    try:
+        return (Path(bundle) / "VERSION").read_text(encoding="utf-8").strip() or None
+    except OSError:
+        return None
+
+
 def get_version() -> str:
-    source = _from_pyproject()
+    source = _from_bundle() or _from_pyproject()
     if source:
         return source
     try:

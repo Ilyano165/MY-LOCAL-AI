@@ -22,7 +22,7 @@ CHROMIUM = next(
         str(p)
         for p in sorted(
             Path(os.environ.get("PLAYWRIGHT_BROWSERS_PATH", "/opt/pw-browsers")).glob(
-                "chromium-*/chrome-linux/chrome"
+                "chromium-*/chrome-linux*/chrome"
             )
         )
     ),
