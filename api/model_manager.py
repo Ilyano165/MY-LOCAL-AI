@@ -30,7 +30,7 @@ from typing import Any
 import httpx
 
 from api.paths import DataLayout
-from router.resources import windows_memory_gb
+from router.resources import _sysconf_total_gb, windows_memory_gb
 
 _SHA_RE = re.compile(r"^[0-9a-f]{64}$")
 _ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,79}$")
@@ -116,12 +116,7 @@ def total_ram_gb() -> float | None:
     win = windows_memory_gb()
     if win is not None:
         return win[1]
-    try:
-        import os
-
-        return os.sysconf("SC_PHYS_PAGES") * os.sysconf("SC_PAGE_SIZE") / 1024**3
-    except (ValueError, OSError, AttributeError):
-        return None
+    return _sysconf_total_gb()
 
 
 class ModelManager:

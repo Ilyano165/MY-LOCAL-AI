@@ -180,10 +180,10 @@ def service_start(layout: DataLayout, port: int, wait_s: float = 45.0) -> dict[s
     }
     if sys.platform == "win32":
         kwargs["creationflags"] = (
-            subprocess.DETACHED_PROCESS  # type: ignore[attr-defined]
+            subprocess.DETACHED_PROCESS
             | subprocess.CREATE_NEW_PROCESS_GROUP
             | subprocess.CREATE_NO_WINDOW
-        )  # type: ignore[attr-defined]
+        )
     else:
         kwargs["start_new_session"] = True
     process = subprocess.Popen(command, **kwargs)

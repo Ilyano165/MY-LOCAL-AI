@@ -48,10 +48,10 @@ async def _read_limited(stream: asyncio.StreamReader, limit: int) -> tuple[bytes
 
 def _kill_group(proc: asyncio.subprocess.Process) -> None:
     with contextlib.suppress(ProcessLookupError):
-        if hasattr(os, "killpg"):
-            os.killpg(proc.pid, signal.SIGKILL)
-        else:  # pragma: no cover – Windows
+        if sys.platform == "win32":  # pragma: no cover – Windows
             proc.kill()
+        else:
+            os.killpg(proc.pid, signal.SIGKILL)
 
 
 def resolve_python(argv: Sequence[str]) -> list[str]:

@@ -53,6 +53,8 @@ def _meminfo_available_gb(path: Path = Path("/proc/meminfo")) -> float | None:
 
 
 def _sysconf_total_gb() -> float | None:
+    if sys.platform == "win32":  # kein sysconf – siehe windows_memory_gb()
+        return None
     try:
         pages = os.sysconf("SC_PHYS_PAGES")
         size = os.sysconf("SC_PAGE_SIZE")
