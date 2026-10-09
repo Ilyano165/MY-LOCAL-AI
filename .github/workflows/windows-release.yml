@@ -11,6 +11,11 @@ on:
     paths-ignore: ["docs/**", "**/*.md"]
   pull_request:
   workflow_dispatch:
+    inputs:
+      release:
+        description: "Publish a GitHub release v<pyproject version> from this commit"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -22,6 +27,8 @@ concurrency:
 jobs:
   build-and-test:
     runs-on: windows-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     timeout-minutes: 60
     defaults:
       run:
@@ -125,7 +132,8 @@ jobs:
           if-no-files-found: warn
 
   release:
-    if: github.ref_type == 'tag'
+    # Tag-Push vX.Y.Z oder manueller Start mit release=true (Tag wird dann von GitHub angelegt)
+    if: github.ref_type == 'tag' || inputs.release
     needs: build-and-test
     runs-on: ubuntu-latest
     permissions:
@@ -138,9 +146,11 @@ jobs:
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build-and-test.outputs.version }}
         run: |
+          tag="v$VERSION"
           cd release
-          gh release create "${{ github.ref_name }}" --repo "${{ github.repository }}" \
-            --title "NOVA ${{ github.ref_name }}" --generate-notes \
+          gh release create "$tag" --repo "${{ github.repository }}" --target "${{ github.sha }}" \
+            --title "NOVA $tag" --generate-notes \
             nova-windows-[0-9]*/*.msi nova-windows-[0-9]*/SHA256SUMS.txt \
-            nova-windows-logs/install-test/install-test.md
+            "$(find nova-windows-logs -name install-test.md | head -1)"
