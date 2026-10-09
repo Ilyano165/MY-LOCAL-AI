@@ -26,8 +26,8 @@ if ($Version -notmatch '^\d{1,3}\.\d{1,3}\.\d{1,5}$') {
   throw "Version '$Version' is not a valid MSI version (expected X.Y.Z)"
 }
 $source = (Resolve-Path $SourceDir).Path
-if (-not (Test-Path "$source\nova.exe") -or -not (Test-Path "$source\nova-launcher.exe")) {
-  throw "nova.exe / nova-launcher.exe missing in $source – run packaging\build.py first"
+foreach ($exe in @("nova.exe", "nova-launcher.exe", "nova-desktop.exe")) {
+  if (-not (Test-Path "$source\$exe")) { throw "$exe missing in $source – run packaging\build.py first" }
 }
 New-Item -ItemType Directory -Force $OutDir | Out-Null
 $msi = Join-Path (Resolve-Path $OutDir).Path "NOVA-$Version-x64.msi"
@@ -38,6 +38,7 @@ $msi = Join-Path (Resolve-Path $OutDir).Path "NOVA-$Version-x64.msi"
   -d "Version=$Version" `
   -d "SourceDir=$source" `
   -d "NoticeRtf=$root\packaging\windows\notice.rtf" `
+  -d "IconFile=$root\packaging\assets\nova.ico" `
   -o $msi
 if ($LASTEXITCODE -ne 0) { throw "wix build failed with exit code $LASTEXITCODE" }
 Write-Host "Built $msi"

@@ -33,6 +33,8 @@
     <Launch Condition="Installed OR VersionNT64 &gt;= 603"
             Message="NOVA requires Windows 10 or Windows 11 (64-bit). This Windows version is not supported." />
 
+    <Icon Id="NovaIcon" SourceFile="$(var.IconFile)" />
+    <Property Id="ARPPRODUCTICON" Value="NovaIcon" />
     <Property Id="ARPNOMODIFY" Value="0" />
     <Property Id="ARPHELPLINK" Value="https://github.com/ilyano165/my-local-ai" />
     <Property Id="ARPCOMMENTS" Value="User data in %LOCALAPPDATA%\NOVA is kept when NOVA is uninstalled." />
@@ -64,8 +66,9 @@
     </ComponentGroup>
 
     <Component Id="StartMenuShortcuts" Directory="NovaMenuFolder" Guid="0B7A3C52-1E4D-4F7B-8A2C-7C3F1D9E4B10">
-      <Shortcut Id="NovaShortcut" Name="NOVA" Description="Start NOVA and open it in the browser"
-                Target="[INSTALLFOLDER]nova-launcher.exe" WorkingDirectory="INSTALLFOLDER" />
+      <Shortcut Id="NovaShortcut" Name="NOVA" Description="NOVA – local AI desktop app"
+                Target="[INSTALLFOLDER]nova-desktop.exe" WorkingDirectory="INSTALLFOLDER"
+                Icon="NovaIcon" />
       <Shortcut Id="NovaStopShortcut" Name="Stop NOVA service" Description="Stop the NOVA background service"
                 Target="[INSTALLFOLDER]nova-launcher.exe" Arguments="stop" WorkingDirectory="INSTALLFOLDER" />
       <RemoveFolder Id="RemoveNovaMenuFolder" On="uninstall" />
@@ -73,8 +76,9 @@
     </Component>
 
     <Component Id="DesktopShortcutComponent" Directory="DesktopFolder" Guid="C2E5A9D4-3B1F-4E6A-9D7C-5A8B2F1E6C33">
-      <Shortcut Id="NovaDesktopShortcut" Name="NOVA" Description="Start NOVA and open it in the browser"
-                Target="[INSTALLFOLDER]nova-launcher.exe" WorkingDirectory="INSTALLFOLDER" />
+      <Shortcut Id="NovaDesktopShortcut" Name="NOVA" Description="NOVA – local AI desktop app"
+                Target="[INSTALLFOLDER]nova-desktop.exe" WorkingDirectory="INSTALLFOLDER"
+                Icon="NovaIcon" />
       <RegistryValue Root="HKCU" Key="Software\NOVA" Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
     </Component>
 

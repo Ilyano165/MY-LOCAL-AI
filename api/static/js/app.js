@@ -1,5 +1,6 @@
 // NOVA UI – Controller. Spricht ausschließlich mit der NOVA API (api.js).
 
+import { desktopPanel, handleDesktopEvent, initDesktop } from "./desktop.js";
 import { api, ApiError, setToken } from "./api.js";
 import { renderMarkdown, escapeHtml } from "./markdown.js";
 import { responseStats, liveLine, dayGroup, formatBytes, formatDuration, categoryLabel } from "./format.js";
@@ -524,6 +525,7 @@ async function renderStatusPanel(refresh = false) {
       html += `<div class="muted spaced">No routing decisions yet.</div>`;
     }
     html += `</div>`;
+    html += await desktopPanel();
     body.innerHTML = html;
   } catch (err) {
     body.innerHTML = `<div class="error-card"><div class="err-title">${escapeHtml(err.message)}</div></div>`;
@@ -802,6 +804,9 @@ function bind() {
   });
   $("close-status").addEventListener("click", () => ($("status-drawer").hidden = true));
   $("refresh-status").addEventListener("click", () => renderStatusPanel(true));
+  for (const type of ["click", "change"]) {
+    $("status-body").addEventListener(type, (e) => handleDesktopEvent(e, () => renderStatusPanel(true)));
+  }
   $("open-sidebar").addEventListener("click", openSidebar);
   $("close-sidebar").addEventListener("click", closeSidebar);
   $("scrim").addEventListener("click", closeSidebar);
@@ -839,5 +844,8 @@ async function init() {
 }
 
 bind();
+initDesktop(() => {
+  if (!$("status-drawer").hidden) renderStatusPanel();
+});
 init();
 setInterval(() => !state.running && refreshStatus(), 30000);

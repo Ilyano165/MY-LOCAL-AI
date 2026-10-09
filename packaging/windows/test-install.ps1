@@ -112,6 +112,25 @@ Check "background service starts (setup mode, no model)" {
   Expect ($s.mode -eq "setup") "mode = $($s.mode)"
   "health ok, mode=$($s.mode)"
 }
+Check "Start Menu 'NOVA' opens the desktop app" {
+  $shell = New-Object -ComObject WScript.Shell
+  $target = $shell.CreateShortcut((Join-Path $menu "NOVA.lnk")).TargetPath
+  Expect ($target -like "*\nova-desktop.exe") "NOVA.lnk points to '$target'"
+  $target
+}
+Check "desktop app window: WebView2 renders the NOVA UI with the desktop bridge" {
+  $out = Join-Path $LogDir "desktop-self-test.json"
+  $exe = Join-Path $programDir "nova-desktop.exe"
+  $p = Start-Process $exe -ArgumentList @("--self-test", "`"$out`"", "--port", "$Port") -PassThru
+  if (-not $p.WaitForExit(180000)) { $p.Kill(); throw "desktop self-test timed out" }
+  Copy-Item (Join-Path $dataDir "logs\desktop.log") $LogDir -ErrorAction SilentlyContinue
+  Expect (Test-Path $out) "no self-test result (exit $($p.ExitCode))"
+  $r = Get-Content $out -Raw | ConvertFrom-Json
+  Expect ($r.ok -eq $true) "self-test failed: $(Get-Content $out -Raw)"
+  Expect ($r.renderer -eq "edgechromium") "renderer $($r.renderer)"
+  Expect ($null -ne (Health)) "core stopped although the window did not start it"
+  "renderer=$($r.renderer), title=$($r.title), status=$($r.status)"
+}
 Check "service listens on loopback only" {
   $listeners = Get-NetTCPConnection -State Listen -LocalPort $Port -ErrorAction Stop
   foreach ($l in $listeners) { Expect ($l.LocalAddress -in @("127.0.0.1", "::1")) "listening on $($l.LocalAddress)" }

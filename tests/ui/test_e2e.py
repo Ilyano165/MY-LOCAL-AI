@@ -275,3 +275,44 @@ def test_setup_screen_without_model(page: object, servers: dict[str, str]) -> No
     expect(body).to_contain_text("NOVA never invents these values")
     page.keyboard.press("Escape")  # type: ignore[attr-defined]
     expect(page.locator("#setup-drawer")).to_be_hidden()  # type: ignore[attr-defined]
+
+
+DESKTOP_BRIDGE = """
+window.__bridgeCalls = [];
+setTimeout(() => {
+  window.pywebview = { api: {
+    info: async () => ({ version: "9.9.9", keep_core_running: false,
+      core: { status: "running", url: location.origin + "/", started_by_desktop: true } }),
+    restart_core: async () => { window.__bridgeCalls.push("restart_core"); return {}; },
+    set_keep_core_running: async (v) => { window.__bridgeCalls.push("keep:" + v); return {}; },
+    open_logs: async () => { window.__bridgeCalls.push("open_logs"); return true; },
+  } };
+  window.dispatchEvent(new Event("pywebviewready"));
+}, 50);
+"""
+
+
+def test_desktop_mode_panel_controls_core(page: object, servers: dict[str, str]) -> None:
+    """Desktop-Fenster (pywebview-Bridge simuliert): Marker, Panel, Steuerung über die Bridge."""
+    page.add_init_script(DESKTOP_BRIDGE)  # type: ignore[attr-defined]
+    page.goto(servers["dev"])  # type: ignore[attr-defined]
+    expect = playwright_api.expect
+    expect(page.locator("html")).to_have_attribute("data-desktop", "1")  # type: ignore[attr-defined]
+    page.click("#open-status")  # type: ignore[attr-defined]
+    panel = page.locator("#desktop-panel")  # type: ignore[attr-defined]
+    expect(panel).to_contain_text("9.9.9")
+    expect(panel).to_contain_text("running")
+    panel.locator("[data-desktop-keep]").check()
+    panel.locator('[data-desktop-action="open_logs"]').click()
+    panel.locator('[data-desktop-action="restart_core"]').click()
+    expect(page.locator("#desktop-panel")).to_be_visible()  # type: ignore[attr-defined]
+    calls = page.evaluate("window.__bridgeCalls")  # type: ignore[attr-defined]
+    assert calls[:3] == ["keep:true", "open_logs", "restart_core"]
+
+
+def test_browser_mode_has_no_desktop_panel(page: object, servers: dict[str, str]) -> None:
+    page.goto(servers["dev"])  # type: ignore[attr-defined]
+    page.click("#open-status")  # type: ignore[attr-defined]
+    playwright_api.expect(page.locator("#status-body .panel").first).to_be_visible()  # type: ignore[attr-defined]
+    assert page.locator("#desktop-panel").count() == 0  # type: ignore[attr-defined]
+    assert page.locator("html").get_attribute("data-desktop") is None  # type: ignore[attr-defined]

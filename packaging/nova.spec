@@ -1,6 +1,7 @@
 # PyInstaller-Spezifikation: ein Ordner (onedir) mit zwei Programmen.
 #   nova.exe           Konsole – CLI und der eigentliche Server (`nova serve`)
-#   nova-launcher.exe  ohne Konsolenfenster – Startmenü/Autostart/Installer
+#   nova-launcher.exe  ohne Konsolenfenster – Autostart, Installer-Aktion, Dienst stoppen
+#   nova-desktop.exe   Desktop-App: natives Fenster (WebView2) + Core-Steuerung
 # Aufruf über `python packaging/build.py` (schreibt VERSION, prüft das Ergebnis).
 # ruff: noqa
 from pathlib import Path
@@ -11,7 +12,8 @@ ROOT = Path(SPECPATH).parent
 BUILD = ROOT / "build" / "packaging"
 
 hidden = collect_submodules("uvicorn")
-for package in ("api", "router", "models", "agents", "tools", "memory", "evaluation"):
+ICON = str(ROOT / "packaging" / "assets" / "nova.ico")
+for package in ("api", "router", "models", "agents", "tools", "memory", "evaluation", "desktop"):
     hidden += collect_submodules(package)
 
 datas = [
@@ -21,7 +23,7 @@ datas = [
     (str(ROOT / "config" / "model-catalog.example.json"), "config"),
     (str(BUILD / "VERSION"), "."),
 ]
-excludes = ["tkinter", "pytest", "playwright", "mypy", "ruff", "openai", "tests"]
+excludes = ["tkinter", "pytest", "playwright", "mypy", "ruff", "openai", "tests", "PIL"]  # PIL: nur Build-Zeit (Icon)
 
 
 def analysis(script):
@@ -37,6 +39,7 @@ def analysis(script):
 
 cli = analysis("nova_main.py")
 launcher = analysis("launcher.py")
+desktop = analysis("desktop_main.py")
 
 cli_exe = EXE(
     PYZ(cli.pure),
@@ -46,6 +49,7 @@ cli_exe = EXE(
     name="nova",
     console=True,
     upx=False,
+    icon=ICON,
 )
 launcher_exe = EXE(
     PYZ(launcher.pure),
@@ -55,6 +59,17 @@ launcher_exe = EXE(
     name="nova-launcher",
     console=False,
     upx=False,
+    icon=ICON,
+)
+desktop_exe = EXE(
+    PYZ(desktop.pure),
+    desktop.scripts,
+    [],
+    exclude_binaries=True,
+    name="nova-desktop",
+    console=False,
+    upx=False,
+    icon=ICON,
 )
 COLLECT(
     cli_exe,
@@ -63,6 +78,9 @@ COLLECT(
     launcher_exe,
     launcher.binaries,
     launcher.datas,
+    desktop_exe,
+    desktop.binaries,
+    desktop.datas,
     name="NOVA",
     upx=False,
 )

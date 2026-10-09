@@ -69,8 +69,9 @@ def smoke(version: str) -> None:
     reported = out.stdout.strip()
     if reported != f"NOVA {version}":
         raise SystemExit(f"Smoke test: expected 'NOVA {version}', got {reported!r}")
-    if not (DIST / f"nova-launcher{EXE_SUFFIX}").is_file():
-        raise SystemExit("Smoke test: nova-launcher missing")
+    for program in ("nova-launcher", "nova-desktop"):
+        if not (DIST / f"{program}{EXE_SUFFIX}").is_file():
+            raise SystemExit(f"Smoke test: {program} missing")
     port = _free_port()
     with tempfile.TemporaryDirectory() as data:
         env = {**os.environ, "NOVA_DATA_DIR": data}
