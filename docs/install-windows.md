@@ -53,8 +53,20 @@ Meldung, und die Installation bricht ab. Bei Problemen hilft das Protokoll von
 
 ## 3. Starten
 
-Startmenü → **NOVA**. Der Hintergrunddienst startet unsichtbar und der Browser öffnet
-`http://127.0.0.1:8765/`. NOVA lauscht nur auf diesem Rechner (`127.0.0.1`).
+Startmenü (oder optional Desktop) → **NOVA**. Es öffnet sich das **NOVA-Fenster**
+(Desktop-App, `nova-desktop.exe`); einen Browser oder eine URL brauchst du nicht. Im
+Hintergrund startet die App den NOVA-Core-Dienst. Er lauscht nur auf diesem Rechner
+(`127.0.0.1:8765`).
+
+Voraussetzung für das Fenster ist die **Microsoft Edge WebView2 Runtime**. Unter Windows 11
+ist sie vorinstalliert, unter Windows 10 kommt sie in der Regel mit Edge. Fehlt sie, meldet
+NOVA das und bietet an, die Oberfläche im Standardbrowser zu öffnen.
+
+Beim Schließen des Fensters stoppt NOVA den Core-Dienst, wenn das Fenster ihn gestartet hat.
+Wenn andere Programme (z. B. IC WARE HQ) NOVA nutzen sollen, aktiviere unter
+**Status → Desktop app** „Keep the core service running when this window closes“. Dort gibt es
+auch die Knöpfe **Restart core**, **Stop core and quit**, **Open in browser**, **Data folder**
+und **Logs**.
 
 Ohne Modell startet NOVA im **Setup-Modus**. Die Oberfläche zeigt „No local model available.“ und
 den Knopf **Set up a model** (§4).
@@ -71,7 +83,7 @@ nova data path             # Datenordner anzeigen
 ```
 
 Fehler beim Start erscheinen als Meldungsfenster. Details stehen in
-`%LOCALAPPDATA%\NOVA\logs\launcher.log`, `service.log` und `nova.log`.
+`%LOCALAPPDATA%\NOVA\logs\desktop.log`, `launcher.log`, `service.log` und `nova.log`.
 
 ## 4. Modell einrichten
 
