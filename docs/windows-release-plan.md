@@ -29,8 +29,8 @@ Build-System: `pyproject.toml` (setuptools), `uv.lock`; Laufzeitabhängigkeiten 
 * Bündelt Python-Interpreter und Abhängigkeiten → **kein Python auf dem Zielrechner nötig**.
 * `onedir` statt `onefile`: schneller Start, kein Entpacken nach `%TEMP%`, weniger
   Fehlalarme von Virenscannern, Dateien für den MSI-Installer einzeln versionierbar.
-* Zwei Programme aus einer Analyse: `nova.exe` (Konsole: CLI, Server) und `nova-launcher.exe`
-  (ohne Konsolenfenster: Startmenü-Verknüpfungen „NOVA öffnen“, Dienst starten/stoppen).
+* Zwei Programme in einem Ordner (`packaging/nova.spec`): `nova.exe` (Konsole: CLI, Server) und
+  `nova-launcher.exe` (ohne Konsolenfenster: Startmenü, Autostart, Installer-Aktion).
 * Version 6.x mit Python 3.13 (PyInstaller unterstützt 3.8–3.15).
 
 ### Installer: MSI mit WiX Toolset **v5.0.2** (gepinnt)
@@ -57,8 +57,10 @@ Build-System: `pyproject.toml` (setuptools), `uv.lock`; Laufzeitabhängigkeiten 
 * `nova service start|stop|status` startet den API-Server als abgelösten Benutzerprozess
   (nur `127.0.0.1`), PID-Datei + Health-Check, Log in `%LOCALAPPDATA%\NOVA\logs\`.
 * Startmenü: „NOVA“ (startet bei Bedarf den Dienst und öffnet die Oberfläche),
-  „NOVA-Dienst stoppen“. Optionaler Autostart bei Anmeldung (Feature im Installer).
-* Vor Upgrade/Deinstallation stoppt der Installer den Dienst (Custom Action).
+  „Stop NOVA service“ (Oberfläche englisch). Optional: Desktop-Verknüpfung und Autostart bei
+  Anmeldung (Installer-Features, standardmäßig aus).
+* Vor Reparatur/Upgrade/Deinstallation stoppt der Installer den Dienst (Custom Action
+  `nova-launcher.exe stop --quiet`, bei Upgrade mit dem Launcher der installierten Version).
 
 ### Systemvoraussetzungen
 * 64-Bit-Windows 10/11 (MSI-Startbedingung `VersionNT64`, Mindestversion `603`; Windows 10
@@ -83,7 +85,10 @@ Build-System: `pyproject.toml` (setuptools), `uv.lock`; Laufzeitabhängigkeiten 
 2. Tag `vX.Y.Z` pushen → GitHub Actions `windows-release.yml`:
    Tests (Windows) → PyInstaller → Smoke-Test der EXE → MSI bauen → **Installationstest**
    (Installieren, Dienst starten, Health-Check, Daten anlegen, Upgrade auf höhere Version,
-   Datenerhalt prüfen, Reparatur, Deinstallation, Datenerhalt prüfen) → SHA-256 → Artefakte.
+   Datenerhalt prüfen, Downgrade-Sperre, Reparatur, Deinstallation, Datenerhalt prüfen)
+   → SHA-256 → Artefakte. Umsetzung: `packaging/build.py`, `packaging/windows/build-msi.ps1`,
+   `packaging/windows/test-install.ps1`, `.github/workflows/windows-release.yml`.
+   Das Upgrade-Test-Paket ist derselbe Build mit um 1 erhöhter Patch-Version.
 3. Bei Tags zusätzlich GitHub-Release mit MSI, Prüfsummen und Testprotokoll.
 4. Der Workflow unterscheidet **gebaut** (Artefakt existiert) und **getestet** (Installations-
    test bestanden); das Testprotokoll ist Teil der Artefakte.
