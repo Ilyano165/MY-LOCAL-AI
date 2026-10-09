@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -60,6 +61,33 @@ def _sysconf_total_gb() -> float | None:
     return pages * size / 1024**3 if pages > 0 and size > 0 else None
 
 
+def windows_memory_gb() -> tuple[float, float] | None:
+    """(verfügbar, gesamt) in GB über ``GlobalMemoryStatusEx`` – nur unter Windows."""
+    if sys.platform != "win32":
+        return None
+    import ctypes
+
+    class MemoryStatus(ctypes.Structure):
+        _fields_ = [
+            ("dwLength", ctypes.c_ulong),
+            ("dwMemoryLoad", ctypes.c_ulong),
+            ("ullTotalPhys", ctypes.c_ulonglong),
+            ("ullAvailPhys", ctypes.c_ulonglong),
+            ("ullTotalPageFile", ctypes.c_ulonglong),
+            ("ullAvailPageFile", ctypes.c_ulonglong),
+            ("ullTotalVirtual", ctypes.c_ulonglong),
+            ("ullAvailVirtual", ctypes.c_ulonglong),
+            ("ullAvailExtendedVirtual", ctypes.c_ulonglong),
+        ]
+
+    status = MemoryStatus()
+    status.dwLength = ctypes.sizeof(MemoryStatus)
+    kernel32 = getattr(ctypes, "windll").kernel32  # noqa: B009 – nur unter Windows vorhanden
+    if not kernel32.GlobalMemoryStatusEx(ctypes.byref(status)):
+        return None
+    return status.ullAvailPhys / 1024**3, status.ullTotalPhys / 1024**3
+
+
 async def _nvidia_free_gb() -> float | None:
     if shutil.which("nvidia-smi") is None:
         return None
@@ -83,6 +111,8 @@ async def detect_resources() -> ResourceBudget:
     vram = await _nvidia_free_gb()
     ram = _meminfo_available_gb()
     source = "proc/meminfo" if ram is not None else ""
+    if ram is None and (win := windows_memory_gb()) is not None:
+        ram, source = win[0], "GlobalMemoryStatusEx"
     if ram is None:
         ram = _sysconf_total_gb()
         source = "sysconf (Gesamt-RAM)" if ram is not None else ""

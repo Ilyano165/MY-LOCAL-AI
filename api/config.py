@@ -6,10 +6,11 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from api.paths import default_data_dir as _platform_data_dir
+
 
 def default_data_dir() -> Path:
-    env = os.environ.get("NOVA_DATA_DIR")
-    return Path(env).expanduser() if env else Path.home() / ".nova"
+    return _platform_data_dir()
 
 
 @dataclass
@@ -24,6 +25,12 @@ class ApiConfig:
     learned_ranker: Path | None = None
     api_token_env: str | None = "NOVA_API_TOKEN"
     """Name der Umgebungsvariable mit optionalem API-Token (nie der Wert selbst)."""
+    allow_remote: bool = False
+    """Zugriff von anderen Rechnern. Nur bewusst aktivieren (siehe ``api.__main__``: erfordert
+    TLS und API-Token). Standard: nur Loopback-Clients werden bedient."""
+    trusted_clients: tuple[str, ...] = ("127.0.0.1", "::1", "localhost")
+    cors_origins: tuple[str, ...] = ()
+    """Browser-Origins, die die Integrations-API nutzen dürfen (Standard: keine)."""
     max_attachment_bytes: int = 10 * 1024 * 1024
     max_text_attachment_chars: int = 200_000
 

@@ -20,6 +20,7 @@ e2e = [
     "playwright>=1.48",
 ]
 dev = [
+    "openai>=1.40",  # nur Tests: prüft die OpenAI-Kompatibilität mit dem offiziellen Client
     "pytest>=8",
     "pytest-asyncio>=0.24",
     "ruff>=0.6",

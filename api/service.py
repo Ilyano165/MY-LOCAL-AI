@@ -28,9 +28,14 @@ from typing import Any
 from agents.agent import Agent
 from agents.state import JsonFileTaskStore
 from agents.task import Phase, Task
+from api.agent_tasks import AgentTaskManager
+from api.audit import AuditLog
 from api.config import ApiConfig
 from api.conversations import ConversationStore, StoredMessage
+from api.integrations import IntegrationStore, RateLimiter
+from api.paths import DataLayout
 from api.settings import Settings, SettingsStore
+from api.version import __version__
 from evaluation.benchmark_results import ProfileStore
 from evaluation.benchmark_tasks import suite_version
 from evaluation.hardware import HardwareProfile, detect_hardware
@@ -56,7 +61,7 @@ from tools.registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
 
-VERSION = "0.1.0"
+VERSION = __version__
 NO_MODEL = "No local model available."
 TEXT_EXTENSIONS = {
     ".txt",
@@ -151,12 +156,16 @@ class _RecentLog(RoutingLog):
         return None
 
 
-async def _until_stopped[T](awaitable: Awaitable[T], stop: asyncio.Event) -> T:
-    """Wartet auf ``awaitable`` oder bricht ab, sobald ``stop`` gesetzt wird."""
+async def _until_stopped[T](
+    awaitable: Awaitable[T], stop: asyncio.Event, limit_s: float | None = None
+) -> T:
+    """Wartet auf ``awaitable``; bricht ab bei ``stop`` (→ _Stopped) oder Zeitlimit (→ _Timeout)."""
     task = asyncio.ensure_future(awaitable)
     stopper = asyncio.ensure_future(stop.wait())
     try:
-        done, _ = await asyncio.wait({task, stopper}, return_when=asyncio.FIRST_COMPLETED)
+        done, _ = await asyncio.wait(
+            {task, stopper}, timeout=limit_s, return_when=asyncio.FIRST_COMPLETED
+        )
     except asyncio.CancelledError:
         task.cancel()
         raise
@@ -167,10 +176,14 @@ async def _until_stopped[T](awaitable: Awaitable[T], stop: asyncio.Event) -> T:
     task.cancel()
     with contextlib.suppress(asyncio.CancelledError, Exception):
         await task
-    raise _Stopped
+    raise _Stopped if stopper in done else _Timeout
 
 
 class _Stopped(Exception):
+    pass
+
+
+class _Timeout(Exception):
     pass
 
 
@@ -185,6 +198,19 @@ class NovaService:
         self.router = self._build_router()
         self.engine.router = self.router
         self.store = ConversationStore(data / "conversations.db")
+        layout = DataLayout(data)
+        self.layout = layout
+        self.integrations = IntegrationStore(layout.integrations_db)
+        self.rate_limiter = RateLimiter()
+        self.audit = AuditLog(layout.audit_log)
+        self.agent_tasks = AgentTaskManager(
+            self.engine,
+            data / "agent-tasks",
+            routing_lookup=self.routing_log.decision,
+            on_event=lambda event, record: self.audit.record(
+                event, integration=record.owner, task=record.id, status=record.status.value
+            ),
+        )
         self.settings_store = SettingsStore(data / "ui_settings.json")
         self.uploads = data / "uploads"
         self.runs: dict[str, Run] = {}
@@ -238,6 +264,8 @@ class NovaService:
             logger.warning("Hardware-Erkennung fehlgeschlagen: %s", exc)
 
     async def shutdown(self) -> None:
+        await self.agent_tasks.shutdown()
+        self.integrations.close()
         for run in list(self.runs.values()):
             run.stop.set()
             if run.task is not None:
@@ -515,16 +543,16 @@ class NovaService:
         return out
 
     async def _select(
-        self, request: ChatRequest, settings: Settings, needs_vision: bool
+        self, request: ChatRequest, model_choice: str, needs_vision: bool
     ) -> tuple[list[ModelMetadata], dict[str, Any], RoutingDecision | None]:
         if len(self.engine.models) == 0:
             raise ServiceError(
                 "no_model", NO_MODEL, 503, self.config_error or "No models configured"
             )
-        if settings.model != "auto":
-            if settings.model not in self.engine.models:
-                raise ServiceError("invalid_settings", f"Unknown model: {settings.model}")
-            model = self.engine.models.effective(settings.model)
+        if model_choice != "auto":
+            if model_choice not in self.engine.models:
+                raise ServiceError("model_not_found", f"Unknown model: {model_choice}", 404)
+            model = self.engine.models.effective(model_choice)
             availability = await self.availability.check(model)
             if not availability.available:
                 raise ServiceError(
@@ -631,36 +659,25 @@ class NovaService:
                 ),
                 timeout_s=settings.request_timeout_s,
             )
-            candidates, routing, _decision = await self._select(request, settings, bool(images))
-            meta["routing"] = routing
-            yield {
-                "event": "routing",
-                "routing": routing,
-                "model": candidates[0].name,
-                "provider": candidates[0].provider,
-            }
-            yield {"event": "status", "state": "generating"}
-            first_at: float | None = None
-            last: StreamChunk | None = None
-            used: ModelMetadata | None = None
-            stream = self.engine.stream(candidates, request).__aiter__()
-            while True:
-                try:
-                    model, chunk = await _until_stopped(stream.__anext__(), run.stop)
-                except StopAsyncIteration:
-                    break
-                if used is None or model.name != used.name:
-                    if used is not None or model.name != candidates[0].name:
-                        yield {"event": "model", "model": model.name, "fallback": True}
-                    used = model
-                if chunk.delta:
-                    if first_at is None:
-                        first_at = time.perf_counter()
-                    content.append(chunk.delta)
-                    yield {"event": "token", "delta": chunk.delta}
-                last = chunk
-            ended = time.perf_counter()
-            meta.update(self._stats(used, last, started, first_at, ended))
+            async for event in self.generate(
+                request,
+                model=settings.model,
+                needs_vision=bool(images),
+                stop=run.stop,
+                deadline_s=settings.request_timeout_s,
+            ):
+                kind = event["event"]
+                if kind == "routing":
+                    meta["routing"] = event["routing"]
+                    yield event
+                    yield {"event": "status", "state": "generating"}
+                elif kind == "token":
+                    content.append(event["delta"])
+                    yield event
+                elif kind == "model":
+                    yield event
+                elif kind == "complete":
+                    meta.update(event["stats"])
             finished = True
             # Kein record_outcome: Ein Chat ohne Verifikation hat kein Erfolgsurteil – es
             # wird keines erfunden (Trainingsdaten entstehen aus verifizierten Agent-Läufen).
@@ -670,6 +687,16 @@ class NovaService:
             finished = True
             message = self._store_partial(cid, content, meta, started, "stopped")
             yield {"event": "stopped", "message": message.to_dict()}
+        except _Timeout:
+            finished = True
+            message = self._store_partial(cid, content, meta, started, "timeout")
+            limit = settings.request_timeout_s
+            yield {
+                "event": "error",
+                "code": "timeout",
+                "message": f"Generation exceeded the time limit of {limit:g} s",
+                "message_id": message.id,
+            }
         except ServiceError as exc:
             finished = True
             message = self.store.add_message(
@@ -711,6 +738,70 @@ class NovaService:
             self.runs.pop(run_id, None)
             if not finished:  # Verbindung abgebrochen (Client hat gestoppt)
                 self._store_partial(cid, content, meta, started, "disconnected")
+
+    async def generate(
+        self,
+        request: ChatRequest,
+        *,
+        model: str = "auto",
+        needs_vision: bool = False,
+        stop: asyncio.Event | None = None,
+        deadline_s: float | None = None,
+    ) -> AsyncIterator[dict[str, Any]]:
+        """Zentrale Generierung für UI **und** Integrationen (eine InferenceEngine).
+
+        Ereignisse: ``routing`` → (``model`` bei Fallback) → ``token``* → ``complete``
+        (mit ``content`` und ``stats``). Fehler: :class:`ServiceError` (Auswahl, kein Modell),
+        :class:`ModelError` (Runtime), ``_Stopped`` (``stop`` gesetzt), ``_Timeout``
+        (Gesamtzeit ``deadline_s`` überschritten).
+        """
+        stop = stop or asyncio.Event()
+        started = time.perf_counter()
+        candidates, routing, _decision = await self._select(request, model, needs_vision)
+        yield {
+            "event": "routing",
+            "routing": routing,
+            "model": candidates[0].name,
+            "provider": candidates[0].provider,
+        }
+        first_at: float | None = None
+        last: StreamChunk | None = None
+        used: ModelMetadata | None = None
+        content: list[str] = []
+        stream = self.engine.stream(candidates, request)
+        iterator = stream.__aiter__()
+        try:
+            while True:
+                remaining = None
+                if deadline_s is not None:
+                    remaining = deadline_s - (time.perf_counter() - started)
+                    if remaining <= 0:
+                        raise _Timeout
+                try:
+                    chosen, chunk = await _until_stopped(iterator.__anext__(), stop, remaining)
+                except StopAsyncIteration:
+                    break
+                if used is None or chosen.name != used.name:
+                    if used is not None or chosen.name != candidates[0].name:
+                        yield {"event": "model", "model": chosen.name, "fallback": True}
+                    used = chosen
+                if chunk.delta:
+                    if first_at is None:
+                        first_at = time.perf_counter()
+                    content.append(chunk.delta)
+                    yield {"event": "token", "delta": chunk.delta}
+                last = chunk
+        finally:
+            aclose = getattr(stream, "aclose", None)  # Runtime-Verbindung schließen
+            if aclose is not None:
+                with contextlib.suppress(Exception):
+                    await aclose()
+        ended = time.perf_counter()
+        yield {
+            "event": "complete",
+            "content": "".join(content),
+            "stats": self._stats(used, last, started, first_at, ended),
+        }
 
     def _store_partial(
         self, cid: str, content: list[str], meta: dict[str, Any], started: float, reason: str

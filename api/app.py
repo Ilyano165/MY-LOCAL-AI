@@ -24,6 +24,8 @@ from pydantic import BaseModel, Field
 from api.config import ApiConfig
 from api.conversations import NotFoundError
 from api.service import AttachmentIn, NovaService, ServiceError
+from api.v1 import create_routers
+from api.version import __version__
 
 STATIC = Path(__file__).resolve().parent / "static"
 _UPLOAD_NAME = re.compile(r"^[0-9a-f]{16}\.(png|jpg|webp|gif)$")
@@ -93,7 +95,7 @@ def create_app(config: ApiConfig, *, service: NovaService | None = None) -> Fast
 
     app = FastAPI(
         title="NOVA API",
-        version="0.1.0",
+        version=__version__,
         lifespan=lifespan,
         docs_url="/api/docs",
         redoc_url=None,
@@ -105,6 +107,23 @@ def create_app(config: ApiConfig, *, service: NovaService | None = None) -> Fast
     async def guard(request: Request, call_next: Any) -> Response:
         token = config.api_token
         path = request.url.path
+        client = request.client.host if request.client else ""
+        integration_api = path.startswith(("/api/v1/", "/v1/"))
+        if not config.allow_remote and client not in config.trusted_clients:
+            svc.audit.record("network_denied", client=client, path=path)
+            return _error(403, "forbidden", "Remote access is disabled (NOVA listens locally)")
+        origin = request.headers.get("origin")
+        if integration_api:
+            if origin and origin not in config.cors_origins:
+                svc.audit.record("cors_denied", origin=origin, path=path)
+                return _error(403, "forbidden", "Origin not allowed")
+            if request.method == "OPTIONS" and origin:
+                return Response(status_code=204, headers=_cors_headers(origin))
+            api_response: Response = await call_next(request)
+            if origin:
+                api_response.headers.update(_cors_headers(origin))
+            api_response.headers.setdefault("X-Content-Type-Options", "nosniff")
+            return api_response
         is_api = not (path == "/" or path.startswith("/static/") or path == "/favicon.svg")
         if token and is_api and path not in ("/system/status",):
             given = (
@@ -149,6 +168,10 @@ def create_app(config: ApiConfig, *, service: NovaService | None = None) -> Fast
         return FileResponse(STATIC / "favicon.svg")
 
     app.mount("/static", StaticFiles(directory=STATIC), name="static")
+
+    nova_v1, openai_v1 = create_routers(svc)
+    app.include_router(nova_v1)
+    app.include_router(openai_v1)
 
     # ------------------------------------------------------------------ Chat & Agent
 
@@ -235,6 +258,16 @@ def create_app(config: ApiConfig, *, service: NovaService | None = None) -> Fast
         return FileResponse(svc.uploads / name)
 
     return app
+
+
+def _cors_headers(origin: str) -> dict[str, str]:
+    return {
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Authorization, Content-Type",
+        "Access-Control-Max-Age": "600",
+        "Vary": "Origin",
+    }
 
 
 def _error(status: int, code: str, message: str, detail: Any = None) -> JSONResponse:

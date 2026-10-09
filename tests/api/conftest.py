@@ -100,6 +100,7 @@ def make_client(tmp_path: Path) -> Factory:
     from fastapi.testclient import TestClient
 
     def factory(engine: InferenceEngine | None = None, **config: Any) -> tuple[Any, NovaService]:
+        config.setdefault("trusted_clients", ("127.0.0.1", "::1", "testclient"))
         cfg = ApiConfig(models_config=None, dev_mode=True, data_dir=tmp_path / "data", **config)
         service = NovaService(cfg, engine=engine)
         if engine is not None:
