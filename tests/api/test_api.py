@@ -38,12 +38,14 @@ def test_dev_mode_without_model_is_honest(make_client: Factory) -> None:
     }
     assert client.get("/conversations").json()["conversations"] == []  # kein Fake-Verlauf
     assert client.post("/chat", json={"message": "hi"}).status_code == 503
+    agent = client.post("/agent/run", json={"task": "do it"})
+    assert agent.status_code == 503 and agent.json()["error"]["code"] == "no_model"
 
 
 def test_config_required_outside_dev_mode(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="--dev"):
         ApiConfig(models_config=None, dev_mode=False, data_dir=tmp_path)
-    with pytest.raises(ValueError, match="nicht gefunden"):
+    with pytest.raises(ValueError, match="not found"):
         ApiConfig(models_config=tmp_path / "missing.toml", dev_mode=False, data_dir=tmp_path)
 
 
@@ -225,7 +227,7 @@ def test_text_attachment_goes_into_prompt(make_client: Factory) -> None:
         client.post("/chat/stream", json={"message": "Summarize", "attachments": [att]}).text
     )
     prompt = runtime.payloads[-1]["messages"][-1]["content"]
-    assert "[Datei: notes.md]" in prompt and "# Secret plan" in prompt
+    assert "[File: notes.md]" in prompt and "# Secret plan" in prompt
     user = events[0]["user_message"]
     assert user["attachments"] == [
         {"name": "notes.md", "mime": "text/markdown", "size": 16, "kind": "text"}
@@ -271,7 +273,7 @@ def test_attachment_size_limit(tmp_path: Path) -> None:
         ApiConfig(dev_mode=True, data_dir=tmp_path, max_attachment_bytes=10),
         engine=engine_with(("m", SSERuntime())),
     )
-    with pytest.raises(ServiceError, match="größer"):
+    with pytest.raises(ServiceError, match="larger than"):
         service._attachments([AttachmentIn("big.txt", "text/plain", b64(b"x" * 11))])
 
 

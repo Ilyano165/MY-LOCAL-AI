@@ -29,16 +29,16 @@ class ApiConfig:
 
     def __post_init__(self) -> None:
         if self.router not in ("rules", "learned"):
-            raise ValueError("router muss 'rules' oder 'learned' sein")
+            raise ValueError("router must be 'rules' or 'learned'")
         if self.models_config is None and not self.dev_mode:
             raise ValueError(
-                "Keine Modellkonfiguration angegeben (--config). Für einen Start ohne Modell "
-                "den Development Mode verwenden (--dev)."
+                "No model configuration given (--config). To start without a model, "
+                "use development mode (--dev)."
             )
         if self.models_config is not None:
             self.models_config = Path(self.models_config).expanduser()
             if not self.models_config.is_file() and not self.dev_mode:
-                raise ValueError(f"Modellkonfiguration nicht gefunden: {self.models_config}")
+                raise ValueError(f"Model configuration not found: {self.models_config}")
         self.data_dir = Path(self.data_dir).expanduser()
 
     @property

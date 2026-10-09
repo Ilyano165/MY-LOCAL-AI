@@ -234,7 +234,7 @@ function assistantBody(message) {
   }
   html += statsHtml(meta);
   if (state.settings && state.settings.show_routing && meta.routing && meta.routing.reason) {
-    html += `<div class="routing-reason">${escapeHtml(meta.routing.reason)}</div>`;
+    html += `<div class="routing-reason"><span class="reason-label">Routing reason</span>${escapeHtml(meta.routing.reason)}</div>`;
   }
   return html;
 }

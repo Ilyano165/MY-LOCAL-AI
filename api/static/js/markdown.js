@@ -3,11 +3,10 @@
 // Code-Blöcke (auch unvollständige während des Streamings), Inline-Code, fett/kursiv,
 // durchgestrichen, Links (nur http/https/mailto) und Autolinks.
 
-const ESC = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+import { escapeHtml } from "./escape.js";
+import { highlight } from "./highlight.js";
 
-export function escapeHtml(text) {
-  return String(text).replace(/[&<>"']/g, (c) => ESC[c]);
-}
+export { escapeHtml };
 
 const COPY_ICON =
   '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>';
@@ -48,7 +47,7 @@ function codeBlock(lang, lines, open) {
     `<div class="code-block${open ? " streaming" : ""}"><div class="code-head">` +
     `<span class="code-lang">${label}</span>` +
     `<button type="button" class="copy-btn" data-copy aria-label="Copy code">${COPY_ICON}<span>Copy</span></button>` +
-    `</div><pre><code${cls}>${escapeHtml(lines.join("\n"))}</code></pre></div>`
+    `</div><pre><code${cls}>${highlight(lines.join("\n"), language)}</code></pre></div>`
   );
 }
 

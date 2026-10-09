@@ -202,11 +202,11 @@ class NovaService:
             except (ValueError, OSError) as exc:
                 if not self.config.dev_mode:
                     raise
-                self.config_error = f"Modellkonfiguration ungültig: {exc}"
+                self.config_error = f"Invalid model configuration: {exc}"
         elif path is not None:
-            self.config_error = f"Modellkonfiguration nicht gefunden: {path}"
+            self.config_error = f"Model configuration not found: {path}"
         else:
-            self.config_error = "Keine Modellkonfiguration angegeben (Development Mode)"
+            self.config_error = "No model configuration given (development mode)"
         return InferenceEngine(ModelRegistry(), ProviderRegistry())
 
     def _build_router(self) -> RuleBasedRouter:
@@ -257,7 +257,7 @@ class NovaService:
         except ValueError as exc:
             raise ServiceError("invalid_settings", str(exc)) from exc
         if updated.model != "auto" and updated.model not in self.engine.models:
-            raise ServiceError("invalid_settings", f"Unbekanntes Modell: {updated.model}")
+            raise ServiceError("invalid_settings", f"Unknown model: {updated.model}")
         self.settings_store.save(updated)
         return updated
 
@@ -310,7 +310,7 @@ class NovaService:
                         "name": name,
                         "reachable": False,
                         "ready": False,
-                        "detail": str(exc) or "Zeitüberschreitung",
+                        "detail": str(exc) or "timeout",
                     }
                 )
         items = [
@@ -433,10 +433,10 @@ class NovaService:
             try:
                 raw = base64.b64decode(item.data_b64, validate=True)
             except (binascii.Error, ValueError) as exc:
-                raise ServiceError("invalid_attachment", f"{name}: ungültige Kodierung") from exc
+                raise ServiceError("invalid_attachment", f"{name}: invalid encoding") from exc
             if len(raw) > self.config.max_attachment_bytes:
                 limit = self.config.max_attachment_bytes // (1024 * 1024)
-                raise ServiceError("invalid_attachment", f"{name}: größer als {limit} MB")
+                raise ServiceError("invalid_attachment", f"{name}: larger than {limit} MB")
             suffix = PurePath(name).suffix.lower()
             if item.mime in IMAGE_TYPES:
                 image_id = uuid.uuid4().hex[:16]
@@ -461,10 +461,10 @@ class NovaService:
                 try:
                     text = raw.decode("utf-8")
                 except UnicodeDecodeError as exc:
-                    raise ServiceError("invalid_attachment", f"{name}: kein UTF-8-Text") from exc
+                    raise ServiceError("invalid_attachment", f"{name}: not UTF-8 text") from exc
                 if len(text) > self.config.max_text_attachment_chars:
                     raise ServiceError(
-                        "invalid_attachment", f"{name}: Text zu lang für den Kontext"
+                        "invalid_attachment", f"{name}: text too long for the context"
                     )
                 stored.append(
                     {
@@ -478,8 +478,8 @@ class NovaService:
             else:
                 raise ServiceError(
                     "unsupported_attachment",
-                    f"{name}: Dateityp {item.mime or suffix or 'unbekannt'} wird noch nicht "
-                    "unterstützt (Text- und Bilddateien sind möglich)",
+                    f"{name}: file type {item.mime or suffix or 'unknown'} is not supported yet "
+                    "(text and image files are)",
                 )
         return stored, images
 
@@ -488,9 +488,9 @@ class NovaService:
         parts = [text]
         for a in attachments:
             if a.get("kind") == "text":
-                parts.append(f"\n\n[Datei: {a['name']}]\n```\n{a['text']}\n```")
+                parts.append(f"\n\n[File: {a['name']}]\n```\n{a['text']}\n```")
             elif a.get("kind") == "image":
-                parts.append(f"\n\n[Bild angehängt: {a['name']}]")
+                parts.append(f"\n\n[Image attached: {a['name']}]")
         return "".join(parts)
 
     # ------------------------------------------------------------------ Chat
@@ -519,17 +519,17 @@ class NovaService:
     ) -> tuple[list[ModelMetadata], dict[str, Any], RoutingDecision | None]:
         if len(self.engine.models) == 0:
             raise ServiceError(
-                "no_model", NO_MODEL, 503, self.config_error or "Keine Modelle konfiguriert"
+                "no_model", NO_MODEL, 503, self.config_error or "No models configured"
             )
         if settings.model != "auto":
             if settings.model not in self.engine.models:
-                raise ServiceError("invalid_settings", f"Unbekanntes Modell: {settings.model}")
+                raise ServiceError("invalid_settings", f"Unknown model: {settings.model}")
             model = self.engine.models.effective(settings.model)
             availability = await self.availability.check(model)
             if not availability.available:
                 raise ServiceError(
                     "model_unavailable",
-                    f"{model.name} ist nicht verfügbar: {availability.reason}",
+                    f"{model.name} is not available: {availability.reason}",
                     503,
                 )
             return [model], {"mode": "manual", "model": model.name}, None
@@ -561,7 +561,7 @@ class NovaService:
         """Ohne verfügbares Modell keine Anfrage – und kein Eintrag im Verlauf."""
         if len(self.engine.models) == 0:
             raise ServiceError(
-                "no_model", NO_MODEL, 503, self.config_error or "Keine Modelle konfiguriert"
+                "no_model", NO_MODEL, 503, self.config_error or "No models configured"
             )
         status = await self.models_status()
         if not status["any_available"]:
@@ -573,9 +573,9 @@ class NovaService:
     ) -> tuple[str, StoredMessage, list[ImageInput], bool]:
         text = text.strip()
         if not text and not attachments:
-            raise ServiceError("invalid_request", "Leere Nachricht")
+            raise ServiceError("invalid_request", "Empty message")
         if len(text) > 100_000:
-            raise ServiceError("invalid_request", "Nachricht zu lang (max. 100000 Zeichen)")
+            raise ServiceError("invalid_request", "Message too long (max. 100000 characters)")
         stored_attachments, images = self._attachments(attachments)
         created = False
         if conversation_id is None:
@@ -598,7 +598,7 @@ class NovaService:
         settings = self.settings()
         run_id = run_id or uuid.uuid4().hex[:16]
         if run_id in self.runs:
-            raise ServiceError("invalid_request", "run_id wird bereits verwendet")
+            raise ServiceError("invalid_request", "run_id is already in use")
         await self._require_model()
         cid, user, images, created = self._prepare(conversation_id, text, attachments or [])
         run = Run(run_id, "chat", cid)
@@ -792,16 +792,15 @@ class NovaService:
     ) -> AsyncIterator[dict[str, Any]]:
         """Agent-Lauf mit Phasen-Ereignissen; Ergebnis inklusive Verifikationsurteil."""
         settings = self.settings()
+        await self._require_model()  # fehlendes Modell ist der grundlegendere Fehler
         if not settings.agent_workspace:
             raise ServiceError(
                 "agent_disabled",
-                "Agent-Modus ist deaktiviert: In den Einstellungen ein "
-                "Arbeitsverzeichnis festlegen.",
+                "Agent mode is disabled: set a workspace directory in Settings.",
             )
-        await self._require_model()
         run_id = run_id or uuid.uuid4().hex[:16]
         if run_id in self.runs:
-            raise ServiceError("invalid_request", "run_id wird bereits verwendet")
+            raise ServiceError("invalid_request", "run_id is already in use")
         cid, user, _images, created = self._prepare(conversation_id, text, [])
         run = Run(run_id, "agent", cid)
         self.runs[run_id] = run

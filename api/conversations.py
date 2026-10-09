@@ -111,7 +111,7 @@ class ConversationStore:
     def rename(self, cid: str, title: str) -> dict[str, Any]:
         title = title.strip()[:120]
         if not title:
-            raise ValueError("Titel darf nicht leer sein")
+            raise ValueError("Title must not be empty")
         self.get(cid)
         with self._lock, self._db:
             self._db.execute(

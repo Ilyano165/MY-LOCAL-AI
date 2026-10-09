@@ -59,7 +59,8 @@ Anhänge mit Größenlimit (10 MB) und Typprüfung (Text, Bilder).
 ## Frontend
 
 Ohne Build-Schritt und ohne externe Ressourcen (läuft offline): `static/index.html`,
-`static/app.css`, ES-Module in `static/js/` – `api.js` (Client, SSE-Parser), `markdown.js`,
+`static/app.css`, ES-Module in `static/js/` – `api.js` (Client, SSE-Parser), `markdown.js`, `highlight.js`
+(Syntaxhervorhebung für Python, JS/TS, Bash, Rust, Go, C-Familie, SQL, CSS, TOML/YAML),
 `format.js` (Kennzahlen), `app.js` (Controller). Erweiterungen: neue Ansicht als Modul,
 Endpunkt in `api.js` ergänzen.
 
@@ -76,4 +77,4 @@ Mobile).
 * Tool-Bestätigungen im Agent-Modus haben noch keinen UI-Dialog (bestätigungspflichtige Tools
   werden abgelehnt); Agent-Modus ohne Anhänge.
 * PDF/Office-Anhänge noch nicht unterstützt (klare Fehlermeldung).
-* Keine Syntaxhervorhebung in Code-Blöcken; Router-Begründungen sind auf Deutsch.
+* Router-Begründungen und Verfügbarkeitsgründe stammen aus dem Core und sind auf Deutsch (in der UI als „Routing reason“ gekennzeichnet); UI und API-Fehlermeldungen sind Englisch.

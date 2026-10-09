@@ -22,14 +22,15 @@ test("code blocks with language, escaping and copy button", () => {
   assert.match(html, /class="code-block"/);
   assert.match(html, /<span class="code-lang">python<\/span>/);
   assert.match(html, /data-copy/);
-  assert.ok(html.includes("if a &lt; b:"));
-  assert.ok(html.includes("print(&#39;&lt;tag&gt;&#39;)"));
+  assert.ok(html.includes("a &lt; b:"));
+  assert.ok(html.includes("&#39;&lt;tag&gt;&#39;"));
+  assert.ok(!html.includes("<tag>"));
 });
 
 test("unclosed fence while streaming still renders as code", () => {
   const html = renderMarkdown("Here:\n```js\nconst x = 1;");
   assert.match(html, /code-block streaming/);
-  assert.ok(html.includes("const x = 1;"));
+  assert.ok(html.replace(/<[^>]+>/g, "").includes("const x = 1;"));
 });
 
 test("markdown inside code is not formatted", () => {

@@ -227,7 +227,7 @@ def test_settings_and_status_panels(page: object, servers: dict[str, str]) -> No
     page.fill("input[name=agent_workspace]", "/does/not/exist")  # type: ignore[attr-defined]
     page.click("#settings-form button[type=submit]")  # type: ignore[attr-defined]
     error = page.locator("#settings-error")  # type: ignore[attr-defined]
-    expect(error).to_contain_text("existiert nicht")  # Server-Validierung sichtbar
+    expect(error).to_contain_text("does not exist")  # Server-Validierung sichtbar
     expect(page.locator("#settings-modal")).to_be_visible()  # type: ignore[attr-defined]
     page.click("#cancel-settings")  # type: ignore[attr-defined]
     page.click("#open-status")  # type: ignore[attr-defined]

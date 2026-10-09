@@ -24,23 +24,23 @@ class Settings:
 
     def validate(self) -> None:
         if not 0.0 <= self.temperature <= 2.0:
-            raise ValueError("temperature muss zwischen 0 und 2 liegen")
+            raise ValueError("Temperature must be between 0 and 2")
         if not 1 <= self.max_tokens <= 131_072:
-            raise ValueError("max_tokens muss zwischen 1 und 131072 liegen")
+            raise ValueError("Max tokens must be between 1 and 131072")
         if not 0 <= self.history_messages <= 200:
-            raise ValueError("history_messages muss zwischen 0 und 200 liegen")
+            raise ValueError("History messages must be between 0 and 200")
         if not 5 <= self.request_timeout_s <= 3600:
-            raise ValueError("request_timeout_s muss zwischen 5 und 3600 liegen")
+            raise ValueError("Request timeout must be between 5 and 3600 s")
         if len(self.system_prompt) > 20_000:
-            raise ValueError("system_prompt ist zu lang (max. 20000 Zeichen)")
+            raise ValueError("System prompt is too long (max. 20000 characters)")
         if self.agent_workspace and not Path(self.agent_workspace).expanduser().is_dir():
-            raise ValueError(f"Agent-Arbeitsverzeichnis existiert nicht: {self.agent_workspace}")
+            raise ValueError(f"Agent workspace does not exist: {self.agent_workspace}")
 
     def merged(self, changes: dict[str, Any]) -> Settings:
         known = {f.name: f.type for f in fields(self)}
         unknown = set(changes) - set(known)
         if unknown:
-            raise ValueError(f"Unbekannte Einstellungen: {sorted(unknown)}")
+            raise ValueError(f"Unknown settings: {sorted(unknown)}")
         data = {**asdict(self), **changes}
         try:
             updated = Settings(
@@ -54,7 +54,7 @@ class Settings:
                 show_routing=bool(data["show_routing"]),
             )
         except (TypeError, ValueError) as exc:
-            raise ValueError(f"Ungültiger Wert: {exc}") from exc
+            raise ValueError(f"Invalid value: {exc}") from exc
         updated.validate()
         return updated
 

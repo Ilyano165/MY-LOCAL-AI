@@ -274,3 +274,12 @@ code, pre { font-family: var(--mono); }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 .spaced { margin-top: 8px; }
+
+/* Syntaxhervorhebung – gedämpfte Töne, gut lesbar auf dunklem Grund */
+.tok-kw { color: #c4a7ff; }
+.tok-str { color: #a5e0a0; }
+.tok-num { color: #f2c98b; }
+.tok-com { color: #6b7385; font-style: italic; }
+.tok-lit { color: #f59fb0; }
+.tok-fn { color: #8fc3ff; }
+.reason-label { color: var(--text-2); font-weight: 560; margin-right: 6px; }

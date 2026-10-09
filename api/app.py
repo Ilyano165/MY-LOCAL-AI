@@ -112,13 +112,13 @@ def create_app(config: ApiConfig, *, service: NovaService | None = None) -> Fast
                 or request.headers.get("authorization", "").removeprefix("Bearer ").strip()
             )
             if given != token:
-                return _error(401, "unauthorized", "API-Token fehlt oder ist falsch")
+                return _error(401, "unauthorized", "API token missing or invalid")
         if request.method in ("POST", "PUT", "PATCH", "DELETE"):
             if request.headers.get("x-nova-client") is None:
-                return _error(403, "forbidden", "Header X-NOVA-Client fehlt")
+                return _error(403, "forbidden", "Missing X-NOVA-Client header")
             origin = request.headers.get("origin")
             if origin and urlsplit(origin).netloc != request.headers.get("host"):
-                return _error(403, "forbidden", "Fremde Origin abgelehnt")
+                return _error(403, "forbidden", "Cross-origin request rejected")
         response: Response = await call_next(request)
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("Referrer-Policy", "no-referrer")
@@ -136,7 +136,7 @@ def create_app(config: ApiConfig, *, service: NovaService | None = None) -> Fast
 
     @app.exception_handler(NotFoundError)
     async def not_found(_request: Request, exc: NotFoundError) -> JSONResponse:
-        return _error(404, "not_found", f"Nicht gefunden: {exc.args[0]}")
+        return _error(404, "not_found", f"Not found: {exc.args[0]}")
 
     # ------------------------------------------------------------------ UI
 
@@ -199,7 +199,7 @@ def create_app(config: ApiConfig, *, service: NovaService | None = None) -> Fast
     async def put_settings(request: Request) -> dict[str, Any]:
         changes = await request.json()
         if not isinstance(changes, dict):
-            raise ServiceError("invalid_settings", "Erwartet ein JSON-Objekt")
+            raise ServiceError("invalid_settings", "Expected a JSON object")
         return svc.update_settings(changes).to_dict()
 
     # ------------------------------------------------------------------ Verlauf
