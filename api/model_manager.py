@@ -281,10 +281,11 @@ class ModelManager:
             state.update({"status": "failed", "error": "checksum mismatch"})
             raise CatalogError("SHA-256 mismatch – file discarded (corrupt or wrong file)")
         with part.open("rb") as fh:
-            if fh.read(4) != GGUF_MAGIC:
-                part.unlink()
-                state.update({"status": "failed", "error": "not a GGUF file"})
-                raise CatalogError("File is not a GGUF model – discarded")
+            magic = fh.read(4)
+        if magic != GGUF_MAGIC:  # erst schließen, dann löschen (Windows sperrt offene Dateien)
+            part.unlink()
+            state.update({"status": "failed", "error": "not a GGUF file"})
+            raise CatalogError("File is not a GGUF model – discarded")
         part.replace(target)
         meta = self._metadata(entry, target, skipped=False, accepted=accepted)
         target.with_suffix(target.suffix + ".json").write_text(

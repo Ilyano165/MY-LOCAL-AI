@@ -54,7 +54,7 @@ async def test_list_directory_limits_and_errors(ws: Path) -> None:
 
 async def test_read_file_full_and_range(harness: Harness, ws: Path) -> None:
     content = "".join(f"zeile {i}\n" for i in range(1, 13))
-    (ws / "a.txt").write_text(content)
+    (ws / "a.txt").write_bytes(content.encode())  # exakte Bytes, unabhängig vom Betriebssystem
     full = await harness.call("read_file", path="a.txt")
     assert full.success and (full.output or "").startswith(" 1| zeile 1")
     assert full.metadata["total_lines"] == 12 and full.metadata["sha256"] == sha256_text(content)
@@ -270,3 +270,17 @@ async def test_search_skips_symlinks_outside(harness: Harness, ws: Path, tmp_pat
     os.symlink(outside / "secret.txt", ws / "link.txt")
     res = await harness.call("search_files", pattern="NEEDLE")
     assert res.output == "Keine Treffer"
+
+
+async def test_edit_file_preserves_crlf_line_endings(harness: Harness, ws: Path) -> None:
+    (ws / "win.txt").write_bytes(b"a = 1\r\nb = 2\r\n")
+    res = await harness.call("edit_file", path="win.txt", old_text="b = 2", new_text="b = 3")
+    assert res.success, res.error
+    assert (ws / "win.txt").read_bytes() == b"a = 1\r\nb = 3\r\n"
+
+
+async def test_search_output_uses_forward_slashes(harness: Harness, ws: Path) -> None:
+    (ws / "sub").mkdir()
+    (ws / "sub" / "x.py").write_text("needle\n")
+    res = await harness.call("search_files", pattern="needle")
+    assert "sub/x.py:1: needle" in (res.output or "")

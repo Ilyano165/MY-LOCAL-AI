@@ -128,7 +128,8 @@ class ToolContext:
     def display(self, path: Path) -> str:
         """Pfad relativ zum Workspace (falls möglich) für Ausgaben."""
         try:
-            return str(path.relative_to(self.workspace.resolve())) or "."
+            # immer mit „/“ – gleiche Ausgabe unter Windows und POSIX
+            return path.relative_to(self.workspace.resolve()).as_posix() or "."
         except ValueError:
             return str(path)
 

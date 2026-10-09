@@ -103,7 +103,7 @@ async def run_process(
         _kill_group(proc)
         await proc.wait()
         data, total = b"", 0
-    text = data.decode("utf-8", errors="replace")
+    text = data.decode("utf-8", errors="replace").replace("\r\n", "\n")  # Windows-Konsole
     if total > max_output_bytes:
         text += f"\n…[Ausgabe gekürzt: {total} Bytes gesamt]"
     return ProcessResult(

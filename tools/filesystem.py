@@ -83,7 +83,8 @@ def _backup(path: Path, ctx: ToolContext) -> str | None:
 def _write_atomic(path: Path, content: str) -> None:
     tmp = path.with_name(f".{path.name}.nova-tmp")
     try:
-        tmp.write_text(content, encoding="utf-8")
+        # newline="": Zeilenenden exakt erhalten (sonst wird unter Windows aus \r\n → \r\r\n)
+        tmp.write_text(content, encoding="utf-8", newline="")
         os.replace(tmp, path)
     finally:
         tmp.unlink(missing_ok=True)
