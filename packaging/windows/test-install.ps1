@@ -51,13 +51,26 @@ function Health() {
   try { return Invoke-RestMethod "http://127.0.0.1:$Port/api/v1/health" -TimeoutSec 3 } catch { return $null }
 }
 
-function ArpVersion() {
-  $keys = Get-ChildItem "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall" -ErrorAction SilentlyContinue
-  foreach ($k in $keys) {
-    $p = Get-ItemProperty $k.PSPath
-    if ($p.DisplayName -eq "NOVA") { return $p.DisplayVersion }
+# Registrierte Produkte über die Windows-Installer-API – dieselbe Quelle wie „Apps & Features“
+# (Pro-Benutzer-MSIs stehen nicht unter HKCU\...\Uninstall, sondern in der Installer-Datenbank).
+$UpgradeCode = "{872F4C49-83EC-40A2-8432-D306FA693A1B}"
+function InstalledProducts() {
+  $installer = New-Object -ComObject WindowsInstaller.Installer
+  $found = @()
+  foreach ($code in $installer.RelatedProducts($UpgradeCode)) {
+    $found += [pscustomobject]@{
+      Code = $code
+      Name = $installer.ProductInfo($code, "ProductName")
+      Version = $installer.ProductInfo($code, "VersionString")
+    }
   }
-  return $null
+  return ,$found
+}
+
+function ArpVersion() {
+  $products = InstalledProducts
+  if ($products.Count -eq 0) { return $null }
+  return ($products | ForEach-Object Version) -join ","
 }
 
 function Expect([bool]$condition, [string]$message) { if (-not $condition) { throw $message } }
@@ -83,7 +96,7 @@ Check "desktop shortcut not created by default" {
   Expect (-not (Test-Path (Join-Path ([Environment]::GetFolderPath("Desktop")) "NOVA.lnk"))) "unexpected desktop shortcut"
   "absent"
 }
-Check "version $OldVersion (exe + Add/Remove Programs)" {
+Check "version $OldVersion (exe + Windows Installer registration)" {
   $v = (& $nova --version).Trim()
   Expect ($v -eq "NOVA $OldVersion") "nova --version = '$v'"
   $arp = ArpVersion
@@ -122,7 +135,7 @@ Check "version after upgrade" {
   $v = (& $nova --version).Trim()
   Expect ($v -eq "NOVA $NewVersion") "nova --version = '$v'"
   Expect ((ArpVersion) -eq $NewVersion) "ARP shows $(ArpVersion)"
-  Expect ((Get-ChildItem "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall" | Where-Object { (Get-ItemProperty $_.PSPath).DisplayName -eq "NOVA" }).Count -eq 1) "more than one NOVA entry in Add/Remove Programs"
+  Expect ((InstalledProducts).Count -eq 1) "more than one NOVA product registered"
   $v
 }
 Check "user data kept after upgrade" {
