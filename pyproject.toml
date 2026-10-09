@@ -9,7 +9,7 @@ dependencies = [
 ]
 
 [project.scripts]
-nova = "api.__main__:main"
+nova = "api.cli:main"
 
 [project.optional-dependencies]
 ui = [

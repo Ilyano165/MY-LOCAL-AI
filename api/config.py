@@ -31,6 +31,8 @@ class ApiConfig:
     trusted_clients: tuple[str, ...] = ("127.0.0.1", "::1", "localhost")
     cors_origins: tuple[str, ...] = ()
     """Browser-Origins, die die Integrations-API nutzen dürfen (Standard: keine)."""
+    mode: str = ""
+    """``normal`` | ``setup`` (installiert, noch kein Modell) | ``development``."""
     max_attachment_bytes: int = 10 * 1024 * 1024
     max_text_attachment_chars: int = 200_000
 
@@ -47,6 +49,10 @@ class ApiConfig:
             if not self.models_config.is_file() and not self.dev_mode:
                 raise ValueError(f"Model configuration not found: {self.models_config}")
         self.data_dir = Path(self.data_dir).expanduser()
+        if not self.mode:
+            self.mode = "development" if self.dev_mode else "normal"
+        if self.mode not in ("normal", "setup", "development"):
+            raise ValueError("mode must be normal, setup or development")
 
     @property
     def api_token(self) -> str | None:

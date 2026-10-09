@@ -262,3 +262,16 @@ def test_no_inline_script_violations(page: object, servers: dict[str, str]) -> N
     page.goto(servers["nova"])  # type: ignore[attr-defined]
     page.wait_for_timeout(500)  # type: ignore[attr-defined]
     assert not [m for m in messages if "Content Security Policy" in m]
+
+
+def test_setup_screen_without_model(page: object, servers: dict[str, str]) -> None:
+    expect = playwright_api.expect
+    page.goto(servers["dev"])  # type: ignore[attr-defined]
+    page.click("#open-setup")  # type: ignore[attr-defined]
+    body = page.locator("#setup-body")  # type: ignore[attr-defined]
+    expect(body).to_contain_text("Local model runtime")
+    expect(body).to_contain_text("No model catalog yet")
+    expect(body).to_contain_text("model-catalog.json")
+    expect(body).to_contain_text("NOVA never invents these values")
+    page.keyboard.press("Escape")  # type: ignore[attr-defined]
+    expect(page.locator("#setup-drawer")).to_be_hidden()  # type: ignore[attr-defined]

@@ -33,6 +33,7 @@ from api.audit import AuditLog
 from api.config import ApiConfig
 from api.conversations import ConversationStore, StoredMessage
 from api.integrations import IntegrationStore, RateLimiter
+from api.model_manager import CatalogError, ModelManager
 from api.paths import DataLayout
 from api.settings import Settings, SettingsStore
 from api.version import __version__
@@ -201,6 +202,8 @@ class NovaService:
         layout = DataLayout(data)
         self.layout = layout
         self.integrations = IntegrationStore(layout.integrations_db)
+        self.model_manager = ModelManager(layout)
+        self._downloads: dict[str, asyncio.Task[Any]] = {}
         self.rate_limiter = RateLimiter()
         self.audit = AuditLog(layout.audit_log)
         self.agent_tasks = AgentTaskManager(
@@ -360,6 +363,66 @@ class NovaService:
             "config_error": self.config_error,
         }
 
+    # ------------------------------------------------------------------ Modell-Einrichtung
+
+    def model_catalog(self) -> dict[str, Any]:
+        """Katalog mit Prüfergebnis je Eintrag (für den Setup-Bildschirm)."""
+        try:
+            entries = self.model_manager.catalog()
+        except CatalogError as exc:
+            return {"catalog_path": str(self.layout.catalog), "error": str(exc), "models": []}
+        return {
+            "catalog_path": str(self.layout.catalog),
+            "models_dir": str(self.layout.models),
+            "models_config": str(self.layout.models_config),
+            "error": None,
+            "models": [
+                {
+                    **e.to_dict(),
+                    "plan": self.model_manager.plan(e).to_dict(),
+                    "download": self.model_manager.progress.get(e.id),
+                }
+                for e in entries
+            ],
+            "installed": self.model_manager.installed(),
+        }
+
+    def start_download(self, entry_id: str, accept_license: bool) -> dict[str, Any]:
+        try:
+            entry = self.model_manager.entry(entry_id)
+        except CatalogError as exc:
+            raise ServiceError("not_found", str(exc), 404) from exc
+        if entry.requires_license_acceptance and not accept_license:
+            raise ServiceError(
+                "license_not_accepted",
+                f"Accept the license first: {entry.license}",
+                400,
+                {"license_url": entry.license_url},
+            )
+        plan = self.model_manager.plan(entry)
+        if not plan.ok:
+            raise ServiceError("download_not_possible", "; ".join(plan.problems), 400)
+        running = self._downloads.get(entry_id)
+        if running is not None and not running.done():
+            raise ServiceError("already_running", "Download already running", 409)
+
+        async def run() -> None:
+            try:
+                await self.model_manager.download(entry, accept_license=accept_license)
+            except CatalogError as exc:
+                state = self.model_manager.progress.setdefault(entry_id, {})
+                state.update({"status": state.get("status") or "failed", "error": str(exc)})
+
+        self.model_manager.progress[entry_id] = {
+            "status": "starting",
+            "done": 0,
+            "total": entry.size_bytes,
+            "error": None,
+        }
+        self._downloads[entry_id] = asyncio.create_task(run())
+        self.audit.record("model_download_started", model=entry_id, license_accepted=accept_license)
+        return {"id": entry_id, **self.model_manager.progress[entry_id]}
+
     def router_status(self) -> dict[str, Any]:
         ranker = getattr(self.router, "ranker", None)
         decisions = [e for e in self.routing_log.entries if e.get("type") == "decision"]
@@ -408,6 +471,7 @@ class NovaService:
         return {
             "version": VERSION,
             "dev_mode": self.config.dev_mode,
+            "mode": self.config.mode,
             "config_path": str(self.config.models_config) if self.config.models_config else None,
             "config_error": self.config_error,
             "data_dir": str(self.config.data_dir),

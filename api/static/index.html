@@ -60,7 +60,10 @@
           <div class="no-model" id="no-model" hidden>
             <div class="no-model-title">No local model available.</div>
             <div class="no-model-text" id="no-model-text"></div>
-            <button class="ghost-btn" id="no-model-status">Open system status</button>
+            <div class="no-model-actions">
+              <button class="primary-btn" id="open-setup">Set up a model</button>
+              <button class="ghost-btn" id="no-model-status">Open system status</button>
+            </div>
           </div>
         </div>
       </section>
@@ -90,6 +93,17 @@
 
       <div class="dropzone" id="dropzone" hidden><div class="dropzone-inner">Drop files to attach</div></div>
     </main>
+
+    <aside class="drawer" id="setup-drawer" aria-label="Model setup" hidden>
+      <div class="drawer-head">
+        <h2>Model setup</h2>
+        <div class="drawer-actions">
+          <button class="ghost-btn" id="refresh-setup">Refresh</button>
+          <button class="icon-btn" id="close-setup" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </div>
+      </div>
+      <div class="drawer-body" id="setup-body"></div>
+    </aside>
 
     <aside class="drawer" id="status-drawer" aria-label="System status" hidden>
       <div class="drawer-head">

@@ -1,0 +1,20 @@
+{
+  "_comment": "Vorlage für <NOVA-Daten>/model-catalog.json. Werte NICHT erfinden: URL, SHA-256, Größe und Lizenz aus der offiziellen Modellseite übernehmen. Platzhalter in <...> werden von NOVA abgelehnt.",
+  "models": [
+    {
+      "id": "example-model-q4",
+      "name": "<Anzeigename>",
+      "file": "<datei>.gguf",
+      "url": "https://<offizielle-quelle>/<datei>.gguf",
+      "sha256": "<64 Hex-Zeichen aus der offiziellen Quelle>",
+      "size_bytes": 1,
+      "license": "<Lizenzname>",
+      "license_url": "https://<lizenztext>",
+      "requires_license_acceptance": true,
+      "min_ram_gb": 8,
+      "context_length": 8192,
+      "quantization": "Q4_K_M",
+      "notes": "Benötigt eine lokale Runtime (llama.cpp llama-server oder Ollama)."
+    }
+  ]
+}

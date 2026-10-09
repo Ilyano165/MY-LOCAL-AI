@@ -79,7 +79,11 @@ function renderStatusIndicator() {
     label.textContent = "No local model available";
   }
   const banner = $("banner");
-  if (state.system && state.system.dev_mode) {
+  const mode = state.system && (state.system.mode || (state.system.dev_mode ? "development" : "normal"));
+  if (mode === "setup" && !s.any_available) {
+    banner.hidden = false;
+    banner.textContent = "Setup required – no local model is configured yet. Chat starts working once a model runtime is set up.";
+  } else if (mode === "development") {
     banner.hidden = false;
     banner.textContent = "Development mode" + (s.any_available ? "" : " – no local model available. Chat is disabled until a model runtime is configured.");
   } else {
@@ -526,6 +530,88 @@ async function renderStatusPanel(refresh = false) {
   }
 }
 
+// ----------------------------------------------------------------- Modell-Einrichtung
+
+let setupTimer = null;
+
+function setupStep(n, title, html) {
+  return `<div class="panel setup-step"><h3><span class="step-no">${n}</span>${escapeHtml(title)}</h3>${html}</div>`;
+}
+
+async function renderSetup() {
+  const body = $("setup-body");
+  let data;
+  try {
+    data = await api.modelCatalog();
+  } catch (err) {
+    body.innerHTML = `<div class="error-card"><div class="err-title">${escapeHtml(err.message)}</div></div>`;
+    return;
+  }
+  const status = state.modelStatus;
+  const runtimeOk = status && status.any_available;
+  let html = setupStep(
+    1,
+    "Local model runtime",
+    runtimeOk
+      ? `<p class="muted">A model is available – NOVA is ready.</p>`
+      : `<p class="muted">NOVA runs models through a local runtime such as <b>llama.cpp</b> (<code>llama-server</code>) or <b>Ollama</b>. Start the runtime, then describe it in:</p><p><code>${escapeHtml(data.models_config || "")}</code></p><p class="muted">Template: <code>config/models.example.toml</code>. Restart the NOVA service afterwards.</p>`,
+  );
+  let models = "";
+  if (data.error) {
+    models = `<div class="error-card"><div class="err-title">Catalog problem</div><div class="err-detail">${escapeHtml(data.error)}</div></div>`;
+  } else if (!data.models.length) {
+    models = `<p class="muted">No model catalog yet. Copy <code>config/model-catalog.example.json</code> to</p><p><code>${escapeHtml(data.catalog_path)}</code></p><p class="muted">and fill in name, download URL, SHA-256, size and license from the official model page. NOVA never invents these values.</p>`;
+  } else {
+    models = data.models
+      .map((m) => {
+        const plan = m.plan;
+        const dl = m.download;
+        const problems = plan.problems.map((p) => `<div class="setup-problem">${escapeHtml(p)}</div>`).join("");
+        const warnings = plan.warnings.map((w) => `<div class="setup-warning">${escapeHtml(w)}</div>`).join("");
+        let action = "";
+        if (plan.installed || (dl && dl.status === "completed")) {
+          action = `<span class="tag measured">installed</span>`;
+        } else if (dl && (dl.status === "downloading" || dl.status === "starting")) {
+          const pct = dl.total ? Math.floor((dl.done / dl.total) * 100) : 0;
+          action = `<div class="progress"><div class="progress-bar" data-pct="${pct}"></div></div><div class="muted">${formatBytes(dl.done)} / ${formatBytes(dl.total)} (${pct} %)</div>`;
+        } else if (plan.ok) {
+          const lic = m.requires_license_acceptance
+            ? `<label class="check"><input type="checkbox" data-accept="${escapeHtml(m.id)}"><span>I have read and accept the license</span></label>`
+            : "";
+          action = `${lic}<button class="primary-btn" data-download="${escapeHtml(m.id)}">Download ${formatBytes(m.size_bytes)}</button>`;
+        }
+        const error = dl && dl.error ? `<div class="setup-problem">${escapeHtml(dl.error)}</div>` : "";
+        return `<div class="model-row setup-model"><div class="setup-model-body"><div class="model-name">${escapeHtml(m.name)}</div><div class="model-sub">${escapeHtml(m.file)} · ${formatBytes(m.size_bytes)}${m.min_ram_gb ? ` · needs ${m.min_ram_gb} GB RAM` : ""}</div><div class="model-sub">License: <a href="${escapeHtml(m.license_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(m.license)}</a></div>${problems}${warnings}${error}<div class="setup-action">${action}</div></div></div>`;
+      })
+      .join("");
+  }
+  html += setupStep(2, "Download a model (optional)", models);
+  if (data.installed && data.installed.length) {
+    html += setupStep(3, "Installed model files", data.installed.map((i) => `<div class="model-sub"><code>${escapeHtml(i.file)}</code></div>`).join("") + `<p class="muted">Point your runtime at the file (e.g. <code>llama-server -m &lt;file&gt;</code>) and add it to <code>models.toml</code>.</p>`);
+  }
+  body.innerHTML = html;
+  body.querySelectorAll(".progress-bar").forEach((bar) => bar.style.setProperty("--pct", `${bar.dataset.pct}%`));
+  const active = data.models.some((m) => m.download && ["downloading", "starting"].includes(m.download.status));
+  clearTimeout(setupTimer);
+  if (active && !$("setup-drawer").hidden) setupTimer = setTimeout(renderSetup, 1000);
+}
+
+async function startDownload(id) {
+  const box = document.querySelector(`[data-accept="${CSS.escape(id)}"]`);
+  try {
+    await api.startDownload(id, box ? box.checked : false);
+  } catch (err) {
+    toast(err.message, "err");
+  }
+  renderSetup();
+}
+
+function openSetup() {
+  $("status-drawer").hidden = true;
+  $("setup-drawer").hidden = false;
+  renderSetup();
+}
+
 function openStatus() {
   $("status-drawer").hidden = false;
   renderStatusPanel(true);
@@ -707,6 +793,13 @@ function bind() {
   $("settings-form").addEventListener("submit", saveSettings);
   $("open-status").addEventListener("click", openStatus);
   $("no-model-status").addEventListener("click", openStatus);
+  $("open-setup").addEventListener("click", openSetup);
+  $("close-setup").addEventListener("click", () => ($("setup-drawer").hidden = true));
+  $("refresh-setup").addEventListener("click", renderSetup);
+  $("setup-body").addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-download]");
+    if (btn) startDownload(btn.dataset.download);
+  });
   $("close-status").addEventListener("click", () => ($("status-drawer").hidden = true));
   $("refresh-status").addEventListener("click", () => renderStatusPanel(true));
   $("open-sidebar").addEventListener("click", openSidebar);
@@ -722,6 +815,7 @@ function bind() {
     if (e.key === "Escape") {
       $("settings-modal").hidden = true;
       $("status-drawer").hidden = true;
+      $("setup-drawer").hidden = true;
       closeSidebar();
     }
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "o") {

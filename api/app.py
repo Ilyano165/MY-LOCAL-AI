@@ -9,7 +9,9 @@ Umgebung (``NOVA_API_TOKEN``).
 from __future__ import annotations
 
 import json
+import os
 import re
+import secrets
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -48,6 +50,11 @@ class AgentBody(BaseModel):
     task: str = Field(min_length=1, max_length=20_000)
     conversation_id: str | None = None
     run_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_-]{6,64}$")
+
+
+class DownloadBody(BaseModel):
+    id: str = Field(min_length=1, max_length=80)
+    accept_license: bool = False
 
 
 class StopBody(BaseModel):
@@ -125,14 +132,14 @@ def create_app(config: ApiConfig, *, service: NovaService | None = None) -> Fast
             api_response.headers.setdefault("X-Content-Type-Options", "nosniff")
             return api_response
         is_api = not (path == "/" or path.startswith("/static/") or path == "/favicon.svg")
-        if token and is_api and path not in ("/system/status",):
+        if token and is_api and path not in ("/system/status", "/internal/shutdown"):
             given = (
                 request.headers.get("x-nova-token")
                 or request.headers.get("authorization", "").removeprefix("Bearer ").strip()
             )
             if given != token:
                 return _error(401, "unauthorized", "API token missing or invalid")
-        if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+        if request.method in ("POST", "PUT", "PATCH", "DELETE") and path != "/internal/shutdown":
             if request.headers.get("x-nova-client") is None:
                 return _error(403, "forbidden", "Missing X-NOVA-Client header")
             origin = request.headers.get("origin")
@@ -189,12 +196,36 @@ def create_app(config: ApiConfig, *, service: NovaService | None = None) -> Fast
     async def agent_run(body: AgentBody) -> Response:
         return await _stream(svc.agent_stream(body.conversation_id, body.task, body.run_id))
 
+    @app.post("/internal/shutdown", include_in_schema=False)
+    async def shutdown(request: Request) -> dict[str, Any]:
+        """Sauberes Beenden durch ``nova service stop`` (Token nur in der PID-Datei)."""
+        expected = os.environ.get("NOVA_SERVICE_TOKEN")
+        given = request.headers.get("x-nova-shutdown-token", "")
+        server = getattr(request.app.state, "server", None)
+        if not expected or not secrets.compare_digest(given, expected) or server is None:
+            raise ServiceError("forbidden", "Shutdown not allowed", 403)
+        svc.audit.record("service_shutdown_requested")
+        server.should_exit = True
+        return {"stopping": True}
+
     @app.post("/agent/stop")
     async def agent_stop(body: StopBody) -> dict[str, Any]:
         """Stoppt eine laufende Generierung (Chat-Stream oder Agent-Lauf)."""
         return {"run_id": body.run_id, "stopped": svc.stop(body.run_id)}
 
     # ------------------------------------------------------------------ Status
+
+    @app.get("/models/catalog")
+    async def model_catalog() -> dict[str, Any]:
+        return svc.model_catalog()
+
+    @app.post("/models/downloads")
+    async def model_download(body: DownloadBody) -> dict[str, Any]:
+        return svc.start_download(body.id, body.accept_license)
+
+    @app.get("/models/downloads")
+    async def model_downloads() -> dict[str, Any]:
+        return {"downloads": svc.model_manager.progress}
 
     @app.get("/models")
     async def models() -> dict[str, Any]:

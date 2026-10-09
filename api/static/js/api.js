@@ -134,6 +134,8 @@ export const api = {
   rename: (id, title) => request("PATCH", `/conversations/${encodeURIComponent(id)}`, { title }),
   remove: (id) => request("DELETE", `/conversations/${encodeURIComponent(id)}`),
   stop: (runId) => request("POST", "/agent/stop", { run_id: runId }),
+  modelCatalog: () => request("GET", "/models/catalog"),
+  startDownload: (id, acceptLicense) => request("POST", "/models/downloads", { id, accept_license: acceptLicense }),
   chatStream: (body, onEvent, signal) => stream("/chat/stream", body, onEvent, signal),
   agentStream: (body, onEvent, signal) => stream("/agent/run", body, onEvent, signal),
 };
