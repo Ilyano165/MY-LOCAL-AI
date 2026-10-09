@@ -102,3 +102,28 @@ Veröffentlicht über `windows-release` (manueller Start mit `release=true`,
 gebaut, und der Installationstest bestand erneut 18 von 18 Prüfungen (`install-test.md` im Release).
 
 `aab2db96d77915c5857c366bb1e3ca9ab5b479e9f32bd6d3bba6617aeedb9ce0  NOVA-0.1.0-x64.msi`
+
+## 5. Desktop-App (Architekturkorrektur, Abschnitt 2)
+
+Stand: 2026-10-09 · Lauf [windows-release](https://github.com/Ilyano165/MY-LOCAL-AI/actions/runs/37955664795)
+auf Commit `d6a2dee`, alle Schritte grün; Linux-CI auf demselben Commit grün.
+
+| Prüfung | Umgebung | Ergebnis |
+|---|---|---|
+| Suite lokal (Linux, inkl. Browser-E2E) | lokal | **933 bestanden**, 2 abgewählt |
+| Suite Windows (ohne Browser-E2E) | `windows-latest` | **922 bestanden**, 3 übersprungen |
+| Desktop-Unit-/Integrationstests (Einstellungen, WebView2-Erkennung, Core-Steuerung, Bridge, Fensterlebenszyklus mit **echtem Core-Prozess**) | Linux | 9 bestanden |
+| JS-Units Desktop-Bridge | Node | 5 bestanden |
+| Browser-E2E: Desktop-Modus (simulierte pywebview-Bridge) und Browser-Modus (kein Desktop-Panel) | Chromium | bestanden |
+| PyInstaller-Build mit `nova-desktop.exe` + Rauchtest | Linux lokal + Windows CI | bestanden (Linux-Ordner 52 MB) |
+| MSI + ICE-Validierung | Windows CI | bestanden |
+| **Installationstest 20/20**, darunter: Startmenü „NOVA“ → `nova-desktop.exe`; **echtes Desktop-Fenster** startet im Selbsttest mit Renderer `edgechromium`, Titel „NOVA“, Desktop-Bridge aktiv, UI hat den Core-Status geladen („No local model available“), Core läuft danach weiter (Fenster hatte ihn nicht gestartet) | Windows CI | bestanden |
+
+MSI dieses Laufs (CI-Artefakt, **kein** Release):
+`d8a2739841fbc59f84a82d5b649e1710cd5a630f4aa4124df2a3440853042938  NOVA-0.1.0-x64.msi`.
+Das Release v0.1.0 enthält die Desktop-App noch **nicht**.
+
+Nicht geprüft: Desktop-Fenster auf einem echten Windows-10/11-Arbeitsplatz durch einen Menschen
+(Darstellung, HiDPI, Fenstergröße merken, Schließen-Verhalten interaktiv), Rückfall-Dialog bei
+fehlender WebView2 auf echter Maschine (nur per Test mit simulierter Registry), Knöpfe der
+Desktop-Bridge im echten WebView2-Fenster (nur in Chromium mit simulierter Bridge).
