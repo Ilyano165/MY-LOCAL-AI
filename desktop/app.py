@@ -376,7 +376,9 @@ def run(argv: list[str], *, webview_module: Any = None) -> int:
         return 1
 
     if webview_module is None:
-        import webview as webview_module
+        import webview as imported_webview
+
+        webview_module = imported_webview
     webview = webview_module
 
     window: Any = None
