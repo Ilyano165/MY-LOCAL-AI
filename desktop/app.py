@@ -279,6 +279,12 @@ SELF_TEST_JS = """
 """
 
 
+def _status_loaded(page: dict[str, Any]) -> bool:
+    """Die UI hat den Core-Status wirklich abgefragt (nicht nur den Platzhalter gezeigt)."""
+    status = str(page.get("status") or "").strip()
+    return bool(status) and not status.lower().startswith("checking")
+
+
 def _self_test(window: Any, out: Path, renderer: Callable[[], str | None], wait_s: float) -> None:
     result: dict[str, Any] = {"ok": False}
     try:
@@ -289,13 +295,14 @@ def _self_test(window: Any, out: Path, renderer: Callable[[], str | None], wait_
             page: dict[str, Any] = {}
             while time.time() < deadline:  # UI baut sich asynchron auf (Status, Bridge)
                 page = json.loads(window.evaluate_js(SELF_TEST_JS))
-                if page.get("bridge") and page.get("desktopMarker") and page.get("status"):
+                if page.get("bridge") and page.get("desktopMarker") and _status_loaded(page):
                     break
                 time.sleep(0.5)
             result.update(page)
             result["renderer"] = renderer()
             result["ok"] = (
                 not page.get("missing")
+                and _status_loaded(page)
                 and bool(page.get("bridge"))
                 and page.get("desktopMarker") == "1"
                 and (sys.platform != "win32" or result["renderer"] == "edgechromium")

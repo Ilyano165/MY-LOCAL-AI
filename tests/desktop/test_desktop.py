@@ -246,6 +246,10 @@ def test_self_test_result_is_written(tmp_path: Path) -> None:
     app._self_test(window, out, lambda: "edgechromium", 5)
     result = json.loads(out.read_text())
     assert result["ok"] is True and window.destroyed
+    page["status"] = "Checking status…"  # UI hat den Core noch nicht erreicht
+    app._self_test(window, out, lambda: "edgechromium", 1)
+    assert json.loads(out.read_text())["ok"] is False
+    page["status"] = "Ready"
     page["missing"] = ["composer"]
     app._self_test(window, out, lambda: "edgechromium", 5)
     assert json.loads(out.read_text())["ok"] is False
