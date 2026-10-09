@@ -484,7 +484,7 @@ async function renderStatusPanel(refresh = false) {
     const gb = (v) => (typeof v === "number" ? `${v.toFixed(1)} GB` : "unknown");
     let html = `<div class="panel"><h3>System</h3>${kv([
       ["Version", system.version],
-      ["Mode", system.dev_mode ? "Development" : "Production"],
+      ["Mode", { setup: "Setup (no model configured)", development: "Development", normal: "Normal" }[system.mode] || (system.dev_mode ? "Development" : "Normal")],
       ["Uptime", formatDuration(system.uptime_s)],
       ["Hardware", system.hardware_summary || "unknown"],
       ["Free VRAM", gb(res.vram_free_gb)],

@@ -134,6 +134,15 @@ implementieren → Tests → Fehler beheben → dokumentieren.
 - Web-UI: Chat, Live-Trace (Schritte, Tools, Routing), Tool-Bestätigungen, Memory-Verwaltung, Wissensbasis-Verwaltung
 - **Abnahme:** Alle CLI-Funktionen in der UI nutzbar; Bestätigungsdialoge funktionieren
 
+## Phase 9b – Windows-Release & Integrationsplattform
+
+> **Stand 2026-10-09: umgesetzt** (siehe `docs/windows-release-plan.md`, `docs/test-report.md`):
+> CLI `nova`, Hintergrunddienst (Benutzerprozess), Setup-Modus ohne Modell, Modell-Katalog mit
+> sicherem Download, Integrations-API `/api/v1` + OpenAI-kompatibel `/v1` mit Schlüsseln/Scopes/
+> Rate Limits/Audit, IC-WARE-HQ-Beispiel, PyInstaller + WiX-v5-MSI, GitHub-Actions-Pipeline mit
+> echtem Installationstest. Offen: Code-Signing, Auto-Update, Lizenzdatei, manueller Test auf
+> Windows 10/11-Desktop, Memory/RAG über die API.
+
 ## Phase 10+ – Ausbau (nach Bedarf, datengetrieben)
 
 - Vision-Rolle produktiv, Bild-Inputs in Tools

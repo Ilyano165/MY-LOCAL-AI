@@ -18,8 +18,12 @@ uv pip install --python .venv/bin/python -e ".[ui]"
 .venv/bin/python -m api --dev                                  # ohne Modell: „No local model available.“
 ```
 
-Optionen: `--port`, `--data-dir` (Standard `~/.nova`), `--router rules|learned`,
-`--learned-ranker PFAD`. Optionales API-Token über die Umgebungsvariable `NOVA_API_TOKEN`.
+Optionen: `--port`, `--data-dir` (Standard: Windows `%LOCALAPPDATA%\NOVA`, sonst `~/.nova`,
+oder `NOVA_DATA_DIR`), `--router rules|learned`, `--learned-ranker PFAD`. Optionales API-Token
+über die Umgebungsvariable `NOVA_API_TOKEN`. Vollständige Kommandozeile: `nova --help`
+(`api/cli.py`: `serve`, `service`, `open`, `integrations`, `models`, `data`).
+
+Integrations-API für andere Programme (`/api/v1`, `/v1`): `docs/integration-api.md`.
 
 ## Endpunkte
 
@@ -35,6 +39,8 @@ Optionen: `--port`, `--data-dir` (Standard `~/.nova`), `--router rules|learned`,
 | GET | `/system/status` | Version, Modus, Hardware, freier Speicher, aktive Läufe |
 | GET/PUT | `/settings` | Einstellungen (Modell, Temperatur, Tokens, System-Prompt, Agent-Workspace …) |
 | GET/POST/PATCH/DELETE | `/conversations[/{id}]` | Verlauf |
+| GET | `/models/catalog` | Modellkatalog mit Prüfung (Platz, RAM, Lizenz) und installierten Modellen |
+| POST/GET | `/models/downloads` | Download starten (`id`, `accept_license`) / Fortschritt |
 | GET | `/uploads/{datei}` | hochgeladene Bilder (nur generierte Dateinamen) |
 
 Interaktive Doku: `/api/docs`.
