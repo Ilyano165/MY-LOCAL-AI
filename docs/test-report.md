@@ -14,7 +14,7 @@ Dieser Bericht trennt drei Dinge strikt:
 |---|---|---|
 | Linux (lokal, Python 3.13) | komplette Suite inkl. Browser-E2E (Playwright/Chromium) | **922 bestanden**, 2 abgewählt (Marker `integration`, s. §4) |
 | Linux (GitHub Actions `ci`) | ruff, ruff format, mypy (Linux **und** `--platform win32`), komplette Suite inkl. E2E | bestanden |
-| Windows (GitHub Actions `windows-release`, `windows-latest`) | ruff, mypy, komplette Suite **ohne** Browser-E2E | {{WIN_PYTEST}} |
+| Windows (GitHub Actions `windows-release`, `windows-latest`) | ruff, mypy, komplette Suite **ohne** Browser-E2E | **913 bestanden**, 3 übersprungen (Browser-/plattformabhängige Tests), 0 fehlgeschlagen |
 | Linux (lokal) | ruff, ruff format, mypy --strict (77 Quelldateien, Linux + win32) | sauber |
 
 Tests nach Bereich (Anzahl gesammelter Tests): agents 90 · api 95 · evaluation 262 ·
@@ -43,11 +43,11 @@ examples 15 · memory 92 · models 131 · packaging 5 · router 98 · tools 124 
 
 | Stufe | Status | Nachweis |
 |---|---|---|
-| Programmordner gebaut (PyInstaller) | {{WIN_BUILD}} | Workflow-Schritt „Build program folder“ |
-| Rauchtest der gebauten EXE (`--version`, Server-Start, Health, UI ausgeliefert) | {{WIN_SMOKE}} | `packaging/build.py` |
-| MSI gebaut (WiX 5.0.2) + ICE-Validierung | {{WIN_MSI}} | `build-msi.ps1` |
-| **Installationstest** (unbeaufsichtigt, `msiexec /qn`) | {{WIN_INSTALL}} | `install-test.md` in den Artefakten |
-| SHA-256-Prüfsummen | {{WIN_SHA}} | `SHA256SUMS.txt` |
+| Programmordner gebaut (PyInstaller) | **gebaut** | Workflow-Schritt „Build program folder“ |
+| Rauchtest der gebauten EXE (`--version`, Server-Start, Health, UI ausgeliefert) | **bestanden** („NOVA 0.1.0, health OK, UI served“) | `packaging/build.py` |
+| MSI gebaut (WiX 5.0.2) + ICE-Validierung | **gebaut + ICE-Validierung bestanden** (0.1.0 und Upgrade-Testpaket 0.1.1) | `build-msi.ps1` |
+| **Installationstest** (unbeaufsichtigt, `msiexec /qn`) | **bestanden: 18 von 18 Prüfungen** | `install-test.md` in den Artefakten |
+| SHA-256-Prüfsummen | `b6f0c98806f5a4fbb00fe0888dd5491890f88ccd61061e2d2eba20cf4fa1996a  NOVA-0.1.0-x64.msi` | `SHA256SUMS.txt` |
 
 Der Installationstest prüft auf `windows-latest`:
 
@@ -70,7 +70,7 @@ Der Installationstest prüft auf `windows-latest`:
 17. Dienst gestoppt;
 18. **Benutzerdaten erhalten**.
 
-Ergebnis des letzten Laufs: {{WIN_RUN}}
+Ergebnis des letzten Laufs: [windows-release #7](https://github.com/Ilyano165/MY-LOCAL-AI/actions/runs/37944321857) auf Commit `ea617bc`: alle Schritte grün. Das MSI (≈ 26 MB) liegt mit `SHA256SUMS.txt` im Artefakt `nova-windows-0.1.0`, Logs und `install-test.md` im Artefakt `nova-windows-logs`. Ein GitHub-Release wird erst bei einem Tag `v0.1.0` erzeugt; bisher wurde keins angelegt.
 
 Gefunden und behoben durch die Windows-Läufe:
 

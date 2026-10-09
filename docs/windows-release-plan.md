@@ -115,4 +115,4 @@ RAG, Memory-Anbindung an die API.
 
 ## 7. Prüfstatus
 
-Wird nach jedem CI-Lauf aktualisiert – siehe `docs/test-report.md`.
+Letzter Stand: Windows-Build, MSI und Installationstest (18/18) in CI grün – Details und nicht geprüfte Punkte in `docs/test-report.md`.
