@@ -93,3 +93,12 @@ Gefunden und behoben durch die Windows-Läufe:
 | Fernzugriff mit TLS (`--allow-remote`) über ein echtes Netzwerk | nur die Start-Bedingungen (TLS + Token erforderlich) und die Zugriffsprüfung sind getestet |
 | Code-Signing, SmartScreen-Reputation | nicht umgesetzt (kein Zertifikat) |
 | Last-/Dauertests, mehrere gleichzeitige Integrationen unter Last | nicht durchgeführt |
+
+## 4. Release v0.1.0
+
+Veröffentlicht über `windows-release` (manueller Start mit `release=true`,
+[Lauf](https://github.com/Ilyano165/MY-LOCAL-AI/actions/runs/37945517772), Commit `1b18794`):
+<https://github.com/Ilyano165/MY-LOCAL-AI/releases/tag/v0.1.0>. Das MSI wurde in diesem Lauf neu
+gebaut, und der Installationstest bestand erneut 18 von 18 Prüfungen (`install-test.md` im Release).
+
+`aab2db96d77915c5857c366bb1e3ca9ab5b479e9f32bd6d3bba6617aeedb9ce0  NOVA-0.1.0-x64.msi`
