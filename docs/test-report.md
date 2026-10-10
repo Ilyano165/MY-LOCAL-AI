@@ -148,3 +148,19 @@ Nicht ausgeführt:
   der Entwicklungsumgebung; deren Netzwerk sperrt Hugging Face.
 * Echte **Websuche** – kein SearXNG/Brave-Zugang in der Entwicklungsumgebung.
 * Mehrstündiger Lauf – nur Budgets/Zeitlogik mit simulierter Uhr getestet.
+
+## 7. Wissen im Chat und Trainings-Grundlagen
+
+Stand: 2026-10-10 · Code-Commits `9011b2e` (Wissen im Chat) und `9cc1a92` (Trainings-Grundlagen);
+Linux-CI und [windows-release](https://github.com/Ilyano165/MY-LOCAL-AI/actions/runs/38058612945) grün.
+
+| Prüfung | Ergebnis |
+|---|---|
+| Suite lokal (Linux, inkl. Browser-E2E) | **978 bestanden**, 2 abgewählt |
+| Wissen im Chat: Relevanzfilter, gekennzeichneter Kontext, Zitaterkennung `[K#]`, abschaltbar, veraltete Erkenntnisse ignoriert, **Integrations-API liest kein privates Wissen** | bestanden (Unit + API + Browser-E2E) |
+| Datensätze: Ausschlüsse (strittig, veraltet, ohne Quelle, Brave), Filter (Secrets, E-Mail/Telefon, Dubletten, Widersprüche), Gruppen-Splits stabil über Versionen, Leck-Prüfung, Unveränderlichkeit + Manipulationserkennung | bestanden |
+| Hardware-Probe mit simulierter GTX 1080 Ti (cu126 mit/ohne Pascal-Kernels) und Ampere-GPU | bestanden – **keine echte GPU** |
+| Trainingsplan (Revision fest, Datensatz-Integrität, VRAM-Schätzung) und CLI Ende-zu-Ende | bestanden |
+
+Nicht ausgeführt: Probe auf echter Hardware, jegliches Training, Chat-Antworten eines echten
+Modells mit Zitaten (die Zitaterkennung wurde mit einer simulierten Runtime geprüft).
