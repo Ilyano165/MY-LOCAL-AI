@@ -383,6 +383,7 @@ class ResearchRun:
             subquestions=[sq.id],
             published=page.page.published,
             author=page.page.author,
+            via=via,
         )
         duplicate = self._duplicate_of(source, text)
         if duplicate:

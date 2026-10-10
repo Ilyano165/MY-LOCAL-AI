@@ -69,7 +69,7 @@ class KnowledgeStore:
                 refs = [
                     {
                         k: sources[s].get(k)
-                        for k in ("id", "url", "title", "fetched_at", "domain", "score")
+                        for k in ("id", "url", "title", "fetched_at", "domain", "score", "via")
                     }
                     for s in f["source_ids"]
                     if s in sources
@@ -104,6 +104,14 @@ class KnowledgeStore:
                 "SELECT f.* FROM findings_fts JOIN findings f ON f.rowid = findings_fts.rowid"
                 " WHERE findings_fts MATCH ? AND (? OR f.stale = 0) ORDER BY rank LIMIT ?",
                 (terms, int(include_stale), limit),
+            ).fetchall()
+        return [self._row(r) for r in rows]
+
+    def all_findings(self, *, include_stale: bool = True) -> list[dict[str, Any]]:
+        with self.lock:
+            rows = self.db.execute(
+                "SELECT * FROM findings WHERE (? OR stale = 0) ORDER BY created_at, id",
+                (int(include_stale),),
             ).fetchall()
         return [self._row(r) for r in rows]
 

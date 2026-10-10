@@ -14,7 +14,16 @@ BUILD = ROOT / "build" / "packaging"
 hidden = collect_submodules("uvicorn")
 ICON = str(ROOT / "packaging" / "assets" / "nova.ico")
 for package in (
-    "api", "router", "models", "agents", "tools", "memory", "evaluation", "desktop", "research"
+    "api",
+    "router",
+    "models",
+    "agents",
+    "tools",
+    "memory",
+    "evaluation",
+    "desktop",
+    "research",
+    "training",
 ):
     hidden += collect_submodules(package)
 
@@ -25,7 +34,16 @@ datas = [
     (str(ROOT / "config" / "model-catalog.example.json"), "config"),
     (str(BUILD / "VERSION"), "."),
 ]
-excludes = ["tkinter", "pytest", "playwright", "mypy", "ruff", "openai", "tests", "PIL"]  # PIL: nur Build-Zeit (Icon)
+excludes = [
+    "tkinter",
+    "pytest",
+    "playwright",
+    "mypy",
+    "ruff",
+    "openai",
+    "tests",
+    "PIL",
+]  # PIL: nur Build-Zeit (Icon)
 
 
 def analysis(script):

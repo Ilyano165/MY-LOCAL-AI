@@ -180,6 +180,7 @@ class Source:
     score: float = 0.0
     score_reasons: list[str] = field(default_factory=list)
     snapshot: str = ""  # Pfad relativ zum Laufverzeichnis
+    via: str = ""  # seed | search:<anbieter> – relevant für Nutzungsbedingungen (Training)
     duplicate_of: str | None = None
 
     def to_dict(self) -> dict[str, Any]:

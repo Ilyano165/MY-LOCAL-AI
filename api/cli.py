@@ -451,6 +451,71 @@ def cmd_research(args: argparse.Namespace) -> int:
     return 2
 
 
+# ---------------------------------------------------------------------- Datensätze & Training
+
+
+def cmd_dataset(args: argparse.Namespace) -> int:
+    from collections import Counter
+
+    from research.knowledge import KnowledgeStore
+    from training.dataset import DatasetError, DatasetStore, from_findings, from_jsonl
+
+    layout = DataLayout(args.data_dir)
+    store = DatasetStore(layout.root / "datasets")
+    try:
+        if args.action == "list":
+            _print_json(store.list_all())
+        elif args.action in ("show", "verify"):
+            if not args.target or "@" not in args.target:
+                raise SystemExit("dataset reference name@version required")
+            name, version = args.target.split("@", 1)
+            if args.action == "show":
+                _print_json(store.manifest(name, version))
+            else:
+                problems = store.verify(name, version)
+                _print_json({"dataset": args.target, "ok": not problems, "problems": problems})
+                return 0 if not problems else 1
+        else:  # build
+            if not args.target:
+                raise SystemExit("dataset name required")
+            examples = []
+            skipped: Counter[str] = Counter()
+            if args.from_knowledge:
+                knowledge = KnowledgeStore(layout.knowledge_db)
+                built, skipped = from_findings(knowledge.all_findings())
+                knowledge.close()
+                examples += built
+            for path in args.manual or []:
+                examples += from_jsonl(Path(path))
+            if not examples:
+                raise SystemExit("no input – use --from-knowledge and/or --manual FILE.jsonl")
+            _print_json(
+                store.build(
+                    args.target, examples, skipped=skipped, description=args.description or ""
+                )
+            )
+    except DatasetError as exc:
+        raise SystemExit(str(exc)) from exc
+    return 0
+
+
+def cmd_train(args: argparse.Namespace) -> int:
+    from training.dataset import DatasetStore
+    from training.plan import TrainingConfig, make_plan
+
+    if args.action != "plan":
+        return 2
+    if not args.config:
+        raise SystemExit("--config FILE.toml required")
+    config = TrainingConfig.from_toml(Path(args.config))
+    hardware = (
+        json.loads(Path(args.hardware).read_text(encoding="utf-8")) if args.hardware else None
+    )
+    plan = make_plan(config, DatasetStore(DataLayout(args.data_dir).root / "datasets"), hardware)
+    _print_json(plan.to_dict())
+    return 0 if plan.ok else 1
+
+
 def cmd_models(args: argparse.Namespace) -> int:
     import asyncio
 
@@ -595,6 +660,20 @@ def parser() -> argparse.ArgumentParser:
     research.add_argument("--provider", choices=["none", "searxng", "brave"])
     research.add_argument("--api-key-env", help="environment variable holding the API key")
     research.set_defaults(func=cmd_research)
+
+    dataset = sub.add_parser("dataset", help="versioned training datasets")
+    dataset.add_argument("action", choices=["build", "list", "show", "verify"])
+    dataset.add_argument("target", nargs="?", help="name (build) or name@version")
+    dataset.add_argument("--from-knowledge", action="store_true", help="use supported findings")
+    dataset.add_argument("--manual", action="append", help="curated JSONL file (repeatable)")
+    dataset.add_argument("--description")
+    dataset.set_defaults(func=cmd_dataset)
+
+    train = sub.add_parser("train", help="training (plan = dry run; nothing is trained)")
+    train.add_argument("action", choices=["plan"])
+    train.add_argument("--config", help="training config (TOML)")
+    train.add_argument("--hardware", help="JSON from `python -m training.probe`")
+    train.set_defaults(func=cmd_train)
 
     data = sub.add_parser("data", help="user data")
     data.add_argument("action", choices=["path", "purge"])
