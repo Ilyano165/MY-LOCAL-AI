@@ -127,3 +127,24 @@ Nicht geprüft: Desktop-Fenster auf einem echten Windows-10/11-Arbeitsplatz durc
 (Darstellung, HiDPI, Fenstergröße merken, Schließen-Verhalten interaktiv), Rückfall-Dialog bei
 fehlender WebView2 auf echter Maschine (nur per Test mit simulierter Registry), Knöpfe der
 Desktop-Bridge im echten WebView2-Fenster (nur in Chromium mit simulierter Bridge).
+
+## 6. Research Engine (Architekturkorrektur, Abschnitt 3)
+
+Stand: 2026-10-10 · Code-Commit `12b2475` · [windows-release](https://github.com/Ilyano165/MY-LOCAL-AI/actions/runs/38056471156)
+und Linux-CI grün.
+
+| Prüfung | Umgebung | Ergebnis |
+|---|---|---|
+| Suite lokal (Linux, inkl. Browser-E2E) | lokal | **959 bestanden**, 2 abgewählt |
+| Suite Windows (ohne Browser-E2E) | `windows-latest` | **947 bestanden**, 3 übersprungen |
+| Research-Tests gegen simuliertes Web (robots.txt, Paywall 402, Dubletten inkl. Tracking-Parameter und Kopie, **Prompt-Injection-Seite**, Widersprüche, Meinung/Hypothese, Budget Zeit/Quellen, Abbruch + Fortsetzen ohne erneuten Abruf, Modellfehler, ohne Modell, ohne Suchanbieter) | Linux + Windows | bestanden |
+| Research über die API inkl. Neustart des Core (Lauf wird „paused“ und fortgesetzt) | Linux + Windows | bestanden |
+| Browser-E2E: Research über die Oberfläche, echter Lauf gegen echten lokalen Server, Bericht | Chromium | bestanden |
+| Installationstest 20/20 inkl. Desktop-Fenster | Windows CI | bestanden |
+| **Echter Lauf gegen das Internet** (CLI, Start-URLs pypi.org / raw.githubusercontent.com / docs.python.org) | Entwicklungsumgebung | 3 Seiten echt abgerufen und bewertet, Tracking-Variante nicht erneut geladen, gesperrter Host als „robots.txt not reachable – not fetched“ protokolliert |
+
+Nicht ausgeführt:
+* Research mit einem **echten Sprachmodell** (Planung, Extraktion, Abgleich) – kein Modell in
+  der Entwicklungsumgebung; deren Netzwerk sperrt Hugging Face.
+* Echte **Websuche** – kein SearXNG/Brave-Zugang in der Entwicklungsumgebung.
+* Mehrstündiger Lauf – nur Budgets/Zeitlogik mit simulierter Uhr getestet.
