@@ -97,6 +97,9 @@ code, pre { font-family: var(--mono); }
 .research-config input { flex: 1; min-width: 0; }
 .research-run-body { min-width: 0; flex: 1; }
 .research-report { margin-top: 10px; }
+.knowledge { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 13px; }
+.knowledge ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 6px; }
+.knowledge summary { cursor: pointer; color: var(--text-2); }
 .desktop-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .ghost-btn.danger { color: #ff8a8a; border-color: rgba(255, 138, 138, 0.35); }
 .ghost-btn:disabled { opacity: 0.5; }

@@ -51,6 +51,7 @@ from models.base import (
 from models.capabilities import ModelMetadata
 from models.inference import InferenceEngine, ProviderRegistry
 from models.model_registry import ModelRegistry
+from research import retrieval
 from research.llm import EngineModel
 from research.manager import ResearchManager
 from router.availability import ProviderAvailability
@@ -273,6 +274,15 @@ class NovaService:
             )
         except Exception as exc:  # Status-Infos dürfen den Start nie verhindern
             logger.warning("Hardware-Erkennung fehlgeschlagen: %s", exc)
+
+    def _knowledge_refs(self, question: str) -> list[dict[str, Any]]:
+        """Passende geprüfte Erkenntnisse (nicht veraltet) für den Chat-Kontext."""
+        try:
+            candidates = self.research.knowledge.search(question[:500], limit=20)
+        except Exception as exc:  # Wissen ist optional – der Chat darf daran nie scheitern
+            logger.warning("knowledge lookup failed: %s", exc)
+            return []
+        return retrieval.to_refs(retrieval.relevant(candidates, question, limit=5))
 
     async def _research_model(self) -> EngineModel | None:
         """Research nutzt dieselbe InferenceEngine – aber nur, wenn ein Modell erreichbar ist."""
@@ -726,6 +736,11 @@ class NovaService:
             messages: list[Message] = []
             if settings.system_prompt.strip():
                 messages.append(Message.system(settings.system_prompt.strip()))
+            refs = self._knowledge_refs(text) if settings.use_knowledge else []
+            if refs:
+                messages.append(Message.system(retrieval.context_message(refs)))
+                meta["knowledge"] = refs
+                yield {"event": "knowledge", "refs": refs}
             messages += self._history(cid, settings, exclude=user.id)
             messages.append(
                 Message.user(
@@ -759,6 +774,8 @@ class NovaService:
                 elif kind == "complete":
                     meta.update(event["stats"])
             finished = True
+            if refs:
+                meta["knowledge"] = retrieval.mark_cited("".join(content), refs)
             # Kein record_outcome: Ein Chat ohne Verifikation hat kein Erfolgsurteil – es
             # wird keines erfunden (Trainingsdaten entstehen aus verifizierten Agent-Läufen).
             message = self.store.add_message(cid, "assistant", "".join(content), meta=meta)

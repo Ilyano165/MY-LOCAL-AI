@@ -339,3 +339,45 @@ def test_research_mode_runs_and_shows_report(page: object, servers: dict[str, st
     expect(report).to_contain_text("Research report")
     expect(report).to_contain_text("No language model was used")
     expect(report.locator("a", has_text="127.0.0.1").first).to_be_visible()
+
+
+def test_chat_shows_research_sources(page: object, servers: dict[str, str]) -> None:
+    """Erkenntnisse aus dem Knowledge Store werden im Chat mitgegeben und als Quellen gezeigt."""
+    from research.knowledge import KnowledgeStore
+
+    store = KnowledgeStore(Path(servers["base"]) / "nova" / "knowledge.db")
+    store.add_findings(
+        "r-e2e",
+        "Zebra stripes",
+        [
+            {
+                "id": "F1",
+                "subquestion": "Q1",
+                "statement": "Zebra stripes deter biting flies.",
+                "classification": "supported",
+                "source_ids": ["S1"],
+                "reasons": ["2 independent sources"],
+            }
+        ],
+        {"Q1": "Why do zebras have stripes?"},
+        {
+            "S1": {
+                "id": "S1",
+                "url": "https://example.org/zebra",
+                "title": "Zebra study",
+                "fetched_at": "2026-10-10T10:00:00+00:00",
+                "domain": "example.org",
+                "score": 0.8,
+            }
+        },
+    )
+    store.close()
+    page.goto(servers["nova"])  # type: ignore[attr-defined]
+    page.fill("#input", "Why do zebras have stripes? Biting flies?")  # type: ignore[attr-defined]
+    page.click("#send")  # type: ignore[attr-defined]
+    box = page.locator(".msg-assistant .knowledge").last  # type: ignore[attr-defined]
+    playwright_api.expect(box).to_contain_text("Zebra stripes deter biting flies.", timeout=15000)
+    playwright_api.expect(box).to_contain_text("provided but not cited")
+    box.locator("summary").click()
+    link = box.locator('a[href="https://example.org/zebra"]')
+    playwright_api.expect(link).to_have_attribute("rel", "noopener noreferrer")

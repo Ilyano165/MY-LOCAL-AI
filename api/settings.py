@@ -21,6 +21,8 @@ class Settings:
     agent_workspace: str = ""
     """Arbeitsverzeichnis für den Agent-Modus (leer = Agent-Modus deaktiviert)."""
     show_routing: bool = True
+    use_knowledge: bool = True
+    """Erkenntnisse aus NOVA-Research (Knowledge Store) im Chat mit Quellen nutzen."""
 
     def validate(self) -> None:
         if not 0.0 <= self.temperature <= 2.0:
@@ -52,6 +54,7 @@ class Settings:
                 request_timeout_s=float(data["request_timeout_s"]),
                 agent_workspace=str(data["agent_workspace"]),
                 show_routing=bool(data["show_routing"]),
+                use_knowledge=bool(data["use_knowledge"]),
             )
         except (TypeError, ValueError) as exc:
             raise ValueError(f"Invalid value: {exc}") from exc

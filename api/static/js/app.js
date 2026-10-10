@@ -2,6 +2,7 @@
 
 import { desktopPanel, handleDesktopEvent, initDesktop } from "./desktop.js";
 import { formToRequest, hasActiveRun, renderResearchForm, renderRuns } from "./research.js";
+import { renderKnowledge } from "./knowledge.js";
 import { api, ApiError, setToken } from "./api.js";
 import { renderMarkdown, escapeHtml } from "./markdown.js";
 import { responseStats, liveLine, dayGroup, formatBytes, formatDuration, categoryLabel } from "./format.js";
@@ -238,6 +239,7 @@ function assistantBody(message) {
   if (meta.verification && meta.verification.summary) {
     html += `<div class="routing-reason">${escapeHtml(meta.verification.summary)}</div>`;
   }
+  html += renderKnowledge(meta.knowledge);
   html += statsHtml(meta);
   if (state.settings && state.settings.show_routing && meta.routing && meta.routing.reason) {
     html += `<div class="routing-reason"><span class="reason-label">Routing reason</span>${escapeHtml(meta.routing.reason)}</div>`;
@@ -742,6 +744,7 @@ async function saveSettings(event) {
     system_prompt: form.system_prompt.value,
     agent_workspace: form.agent_workspace.value.trim(),
     show_routing: form.show_routing.checked,
+    use_knowledge: form.use_knowledge.checked,
   };
   try {
     state.settings = await api.saveSettings(data);
