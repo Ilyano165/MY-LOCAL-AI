@@ -20,7 +20,7 @@ Card oder Release-Notes. Jeder Checkpoint nennt Basismodell, Basis-Lizenz und Da
 |---|---|---|---|---|
 | 1 | Basismodell | Auswahl nach Lizenz, Hardware, eigener Eval (§2) | Eintrag in `models.toml` + Eval-Baseline | ⬜ (Hardware unbekannt) |
 | 2 | NOVA-Systemarchitektur | Router, Agent, Tools, Memory, Verifikation | Code (`router/`, `agents/`, …) | ✅ vorhanden |
-| 3 | Eigener Datensatz | aus geprüften Research-Erkenntnissen, verifizierten Agent-Traces, manuell kuratierten Beispielen | `datasets/<name>/<version>/` mit Manifest | ⬜ |
+| 3 | Eigener Datensatz | aus geprüften Research-Erkenntnissen, manuell kuratierten Beispielen (Agent-Traces ⬜) | `datasets/<name>/<version>/` mit Manifest | ✅ Pipeline (`nova dataset`) – noch kein echter Datensatz |
 | 4 | SFT | LoRA/QLoRA auf dem Basismodell | Adapter + Trainingslog + Config-Hash | ⬜ |
 | 5 | Präferenzoptimierung (optional) | DPO/ORPO auf geprüften Paaren (gewählt/abgelehnt) | Adapter v+1 | ⬜ erst wenn SFT stabil |
 | 6 | Unabhängige Evaluation | feste Testsets, deterministische Checks, Basis vs. Checkpoint, Regressionen | Eval-Report (JSON + MD) | 🟡 Evaluationsrahmen vorhanden (`evaluation/`), Modell-Vergleich fehlt |
@@ -154,5 +154,5 @@ Ein Checkpoint wird nur freigegeben, wenn **alle** gelten:
 2. Basismodell lokal eingebunden und Baseline mit NOVAs Eval gemessen.
 3. Datensatz v0.1: ≥ einige hundert geprüfte Beispiele für **eine** klar definierte
    Zielfähigkeit (z. B. NOVA-Tool-Calling-Format oder Quellenzitate), mit getrenntem Testset.
-4. Trainingspipeline (`training/`) mit Dry-Run-Test (siehe `continuous-learning.md`).
+4. Trainingspipeline: Datensätze, Probe und Plan ✅; Runner ⬜ (`docs/training-setup.md`).
 5. Freigabe-Gate automatisiert.

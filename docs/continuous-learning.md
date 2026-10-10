@@ -103,9 +103,10 @@ mit einem anderen Modell als dem trainierten, und nie als alleiniges Freigabekri
 | Research Engine: Planer, Such-Adapter (SearXNG, Brave), höflicher Abruf (robots.txt, Rate Limit, Größen-/Typlimit, keine Paywall-Umgehung), Deduplizierung (URL + Hash + Nahdubletten), Quellenbewertung mit Begründung, Extraktion mit **wörtlicher Zitatprüfung**, Gleich-/Widerspruchserkennung, Klassifikation, Budget, Checkpoint, Abbruch/Pause/Fortsetzen, Audit, Bericht | ✅ implementiert + getestet | `tests/research/` (simuliertes Web inkl. Prompt-Injection), Browser-E2E, echter Lauf gegen erreichbare Webseiten (§7) |
 | Bedienung: UI (Research-Bereich), CLI `nova research`, API `/research/*` | ✅ | Tests, E2E |
 | Knowledge Store (SQLite/FTS5): speichern, suchen, veraltet markieren, löschen | ✅ | Tests |
-| Retrieval der Erkenntnisse **im Chat** mit Quellenangaben | ⬜ nächster Schritt |
-| Datensatzpipeline, Splits, Leak-Check | ⬜ |
-| Trainings-Adapter (TRL/PEFT), Hardware-Probelauf | ⬜ |
+| Retrieval der Erkenntnisse **im Chat** mit Quellenangaben (`[K#]`, zitierte vs. nur bereitgestellte Quellen, abschaltbar; nicht über die Integrations-API) | ✅ implementiert + getestet |
+| Datensatzpipeline: Beispiele aus belegten Erkenntnissen + manuellen JSONL, Filter (Länge, Secrets, personenbezogene Daten, Dubletten, Nahdubletten, widersprüchliche Antworten), Ausschluss von Quellen mit Trainingsverbot, Gruppen-Splits stabil über Versionen, 8-Gramm-Leck-Prüfung, unveränderliche Versionen mit Manifest/SHA-256 | ✅ implementiert + getestet (`nova dataset`) |
+| Hardware-Probe (`python -m training.probe`) und Trainingsplan als Dry-Run (`nova train plan`) | ✅ implementiert, mit simulierter GPU getestet |
+| Trainings-Runner (TRL/PEFT), echter Probelauf auf GPU | ⬜ nächster Schritt – braucht den PC des Nutzers (`docs/training-setup.md`) |
 | Eval-Vergleich Basis vs. Checkpoint, Freigabe-Gate | ⬜ (Evaluationsrahmen vorhanden) |
 | Zeitgesteuerte Recherche („nach Plan“) | ⬜ (heute nur auf Auftrag) |
 | Zentrale Ressourcensteuerung | ⬜ heute: höchstens 1 Research-Lauf gleichzeitig; Modellaufrufe teilen sich die Engine mit dem Chat |

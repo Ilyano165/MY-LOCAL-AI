@@ -34,7 +34,7 @@ Wrapper um ein fremdes Modell:
 | Windows-Installer (MSI), CI mit Installationstest | `packaging/`, `.github/` | ✅ (Release v0.1.0) |
 | Desktop-Fenster | `desktop/` | ✅ dieser Schritt (siehe §5) |
 | Research Engine + Knowledge Store | `research/` | ✅ (ohne Retrieval im Chat) |
-| Trainings-/Datensatzpipeline | `training/` | ⬜ übernächster Schritt |
+| Trainings-/Datensatzpipeline | `training/` | 🟡 Datensätze, Probe, Plan ✅ · Runner/Eval-Gate ⬜ |
 | Zentrale Ressourcensteuerung | `core/` | ⬜ |
 | Web-Zugriff (Suche/Fetch) | `research/` | ✅ nur für Research (SearXNG/Brave, robots.txt); der Agent hat weiterhin keine Web-Tools |
 
@@ -88,7 +88,7 @@ Regeln:
 | `memory.db` | Gedächtnis | ⬜ Anbindung |
 | `research/<run-id>/`, `research.json` | Plan, Checkpoint, Quellen-Snapshots, Audit, Bericht; Suchanbieter-Konfiguration (ohne Schlüssel) | ✅ |
 | `knowledge.db` | geprüfte Erkenntnisse mit Quellen | ✅ (Retrieval im Chat ⬜) |
-| `datasets/<name>/<version>/` | Trainingsdaten (train/val/test, Manifest, Hashes) | ⬜ |
+| `datasets/<name>/<version>/` | Trainingsdaten (train/val/test, Manifest, Hashes) | ✅ |
 | `checkpoints/nova-<version>/` | LoRA-Adapter / gemergte Gewichte, Model Card, Eval-Report | ⬜ |
 
 ## 5. Desktop-Packaging – Entscheidung
@@ -148,7 +148,7 @@ Nicht vorhandene Bereiche werden in der UI **nicht** als Attrappe angezeigt.
 | 1 | Bestandsaufnahme, dieses Dokument, Modell- und Lern-Architektur | ✅ |
 | 2 | Desktop-App (Fenster, Icon, Core-Steuerung, MSI-Integration, CI-Test) | ✅ |
 | 3 | Research Engine (Durchlauf mit Checkpointing, Audit, Bericht, Wissensspeicher) | ✅ |
-| 4 | Retrieval der Erkenntnisse im Chat mit Quellen, Memory-Anbindung | ⬜ nächster Schritt |
-| 5 | Datensatz- und Trainingspipeline (Versionierung, Splits, Leak-Check, Trainer-Adapter) | ⬜ |
+| 4 | Retrieval der Erkenntnisse im Chat mit Quellen | ✅ (Memory-Anbindung ⬜) |
+| 5 | Datensatz-Pipeline (Versionierung, Splits, Leak-Check), Hardware-Probe, Trainingsplan | ✅ (Trainings-Runner ⬜) |
 | 6 | Resource Governor, Research/Training-Status in der UI | ⬜ |
 | 7 | Erstes Fine-Tuning auf geeigneter Hardware + unabhängige Evaluation | ⬜ hardwareabhängig |
