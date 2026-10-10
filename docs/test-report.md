@@ -157,6 +157,7 @@ Linux-CI und [windows-release](https://github.com/Ilyano165/MY-LOCAL-AI/actions/
 | Prüfung | Ergebnis |
 |---|---|
 | Suite lokal (Linux, inkl. Browser-E2E) | **978 bestanden**, 2 abgewählt |
+| Suite Windows (ohne Browser-E2E) + Installationstest | **965 bestanden**, 3 übersprungen · Installationstest 20/20 inkl. Desktop-Fenster |
 | Wissen im Chat: Relevanzfilter, gekennzeichneter Kontext, Zitaterkennung `[K#]`, abschaltbar, veraltete Erkenntnisse ignoriert, **Integrations-API liest kein privates Wissen** | bestanden (Unit + API + Browser-E2E) |
 | Datensätze: Ausschlüsse (strittig, veraltet, ohne Quelle, Brave), Filter (Secrets, E-Mail/Telefon, Dubletten, Widersprüche), Gruppen-Splits stabil über Versionen, Leck-Prüfung, Unveränderlichkeit + Manipulationserkennung | bestanden |
 | Hardware-Probe mit simulierter GTX 1080 Ti (cu126 mit/ohne Pascal-Kernels) und Ampere-GPU | bestanden – **keine echte GPU** |
