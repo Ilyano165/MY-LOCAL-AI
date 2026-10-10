@@ -56,9 +56,8 @@ Kontextqualität bei sehr langen Eingaben, begrenzte Mehrschritt-Planung.
 
 ## 3. Hardwareabhängige Planung
 
-**Die Zielhardware des Nutzers ist unbekannt.** Die Entwicklungsumgebung (Cloud-Container:
+Zielhardware des Nutzers: siehe §3.1. Die Entwicklungsumgebung (Cloud-Container:
 4 CPU-Kerne, 15 GB RAM, keine GPU) ist **nicht** die Zielmaschine und für Training ungeeignet.
-Benötigt: GPU-Modell, VRAM, RAM, CPU, freier Speicher.
 
 | Stufe | Hardware | Inferenz (GGUF Q4) | Fine-Tuning | Einordnung |
 |---|---|---|---|---|
@@ -77,6 +76,34 @@ Quellen: [Unsloth Requirements](https://unsloth.ai/docs/get-started/fine-tuning-
 [Qwen3.5-Übersicht (The Batch)](https://www.deeplearning.ai/the-batch/alibabas-latest-flagship-models-are-open-weights-moe-performers-in-sizes-from-less-than-1b-parameters),
 [Gemma 4 unter Apache 2.0 (Google Open Source Blog)](https://opensource.googleblog.com/2026/03/gemma-4-expanding-the-gemmaverse-with-apache-20.html).
 Sekundärquellen dienen der Vorauswahl, nicht als Beleg.
+
+### 3.1 Zielhardware des Nutzers (Angabe vom 2026-10-10)
+
+**32 GB RAM · Intel i7 · NVIDIA GeForce GTX 1080 Ti (11 GB VRAM, Pascal, Compute Capability 6.1)
+· > 500 GB SSD.** Die Angaben stammen vom Nutzer und sind noch nicht durch einen Hardware-Check
+auf dem Gerät bestätigt (NOVA erkennt RAM/VRAM beim Start: Status → System).
+
+| Bereich | Einschätzung | Begründung / Risiko |
+|---|---|---|
+| Inferenz | **gut**: 9B-Modell in Q4 (≈ 6,6 GB) vollständig in VRAM, 4B mit viel Kontext | llama.cpp unterstützt Pascal; Richtwert für 8B Q4 auf 1080 Ti: ≈ 60 Token/s (Schätzung einer Vergleichsseite, **nicht gemessen**) |
+| Wichtig für Inferenz | llama.cpp-Build mit **CUDA 12.x** verwenden | CUDA 13 unterstützt nur noch GPUs ab Turing (sm_75) |
+| Fine-Tuning | **möglich, aber unbewiesen und langsam** | Pascal hat keine Tensor Cores und kein bf16, fp16 ist auf GP102 stark gedrosselt → Berechnung in fp32 |
+| Software für Training | PyTorch **≤ 2.14 mit CUDA 12.6** (letzte Version mit Pascal-Binaries); cu128-Builds haben keine Pascal-Kernel | ab PyTorch 2.15 nur noch Eigenbau |
+| Unsloth | offiziell Minimum Compute Capability 7.0, „GTX 1070, 1080 works, but is slow“ | Unterstützung kann jederzeit entfallen |
+| bitsandbytes 4-bit | laut Drittquellen ab Compute Capability 6.0 | auf 6.1 **nicht** Ende-zu-Ende bestätigt |
+
+**Festlegung für das erste Fine-Tuning auf diesem PC:** Qwen3.5-4B (Apache-2.0) mit QLoRA,
+Sequenzlänge ≤ 1024, Batch 1 + Gradient Accumulation, fp32-Compute. Vor jedem echten Training
+läuft ein **Hardware-Probelauf** (0.8B-Modell, wenige Schritte), der Software-Stack, VRAM-Bedarf
+und Geschwindigkeit misst – erst danach wird entschieden, ob 4B lokal trainiert wird.
+Rückfalloption: dieselbe, reproduzierbare Pipeline auf einer gemieteten GPU (Entscheidung des
+Nutzers; Daten verlassen dann den PC).
+
+Quellen: [PyTorch: Pascal aus CUDA-12.8-Builds entfernt](https://dev-discuss.pytorch.org/t/cuda-toolkit-version-and-architecture-support-update-maxwell-and-pascal-architecture-support-removed-in-cuda-12-8-and-12-9-builds/3128),
+[PyTorch: CUDA-12.6-Wheels enden mit 2.15](https://dev-discuss.pytorch.org/t/notice-cuda-12-6-wheels-will-no-longer-be-published-from-pytorch-2-15-drops-maxwell-pascal-volta/3432),
+[Erfahrungsbericht GTX 1080 Ti mit cu128](https://github.com/jhj0517/Whisper-WebUI/issues/653),
+[Unsloth Requirements](https://docs.unsloth.ai/get-started/beginner-start-here/unsloth-requirements),
+[Schätzwert 8B auf 1080 Ti](https://willitrunai.com/can-run/llama-3.1-8b-on-gtx-1080-ti-11gb).
 
 ## 4. Werkzeugkette (geplant)
 
@@ -123,7 +150,7 @@ Ein Checkpoint wird nur freigegeben, wenn **alle** gelten:
 
 ## 7. Voraussetzungen für das erste eigene Fine-Tuning
 
-1. Zielhardware bekannt (GPU/VRAM/RAM/CPU/Speicher) → Basismodell + Größe festlegen.
+1. Zielhardware bekannt ✅ (§3.1) → Basismodell Qwen3.5-4B (QLoRA); Hardware-Probelauf auf dem PC steht aus.
 2. Basismodell lokal eingebunden und Baseline mit NOVAs Eval gemessen.
 3. Datensatz v0.1: ≥ einige hundert geprüfte Beispiele für **eine** klar definierte
    Zielfähigkeit (z. B. NOVA-Tool-Calling-Format oder Quellenzitate), mit getrenntem Testset.

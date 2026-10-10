@@ -33,10 +33,10 @@ Wrapper um ein fremdes Modell:
 | Core-Dienst + Web-UI + Integrations-API + CLI | `api/` | ✅ |
 | Windows-Installer (MSI), CI mit Installationstest | `packaging/`, `.github/` | ✅ (Release v0.1.0) |
 | Desktop-Fenster | `desktop/` | ✅ dieser Schritt (siehe §5) |
-| Research Engine | `research/` | ⬜ nächster Schritt |
+| Research Engine + Knowledge Store | `research/` | ✅ (ohne Retrieval im Chat) |
 | Trainings-/Datensatzpipeline | `training/` | ⬜ übernächster Schritt |
 | Zentrale Ressourcensteuerung | `core/` | ⬜ |
-| Web-Zugriff (Suche/Fetch) | – | ⬜ existiert nicht; Agent hat keine Web-Tools |
+| Web-Zugriff (Suche/Fetch) | `research/` | ✅ nur für Research (SearXNG/Brave, robots.txt); der Agent hat weiterhin keine Web-Tools |
 
 Wichtigste Lücke gegenüber dem Zielbild: Es gibt bisher **keine** Web-Recherche, **keine**
 Trainingspipeline und **kein** eigenes Modell. Alle Chat-Tests laufen gegen eine simulierte
@@ -86,8 +86,8 @@ Regeln:
 | `integrations.db`, `logs/audit.jsonl` | Integrationsschlüssel (Hash), Audit | ✅ |
 | `desktop.json` | Fenstergröße, „Core beim Schließen weiterlaufen lassen“ | ✅ dieser Schritt |
 | `memory.db` | Gedächtnis | ⬜ Anbindung |
-| `research/<run-id>/` | Plan, Checkpoints, Quellen-Snapshots, Audit, Bericht | ⬜ |
-| `knowledge.db` | geprüfte Erkenntnisse mit Quellen (Retrieval) | ⬜ |
+| `research/<run-id>/`, `research.json` | Plan, Checkpoint, Quellen-Snapshots, Audit, Bericht; Suchanbieter-Konfiguration (ohne Schlüssel) | ✅ |
+| `knowledge.db` | geprüfte Erkenntnisse mit Quellen | ✅ (Retrieval im Chat ⬜) |
 | `datasets/<name>/<version>/` | Trainingsdaten (train/val/test, Manifest, Hashes) | ⬜ |
 | `checkpoints/nova-<version>/` | LoRA-Adapter / gemergte Gewichte, Model Card, Eval-Report | ⬜ |
 
@@ -135,7 +135,7 @@ PyPI-Metadaten pywebview 6.2.1 / pythonnet 3.2.1 (abgerufen 2026-10-09).
 | Agent Mode | ✅ |
 | Einstellungen, System-/Modell-/Router-Status (Diagnose) | ✅ |
 | Core-Dienst starten/stoppen/neu starten aus der App | ✅ dieser Schritt (Desktop-Bridge) |
-| Research Mode | ⬜ mit Research Engine |
+| Research Mode | ✅ (starten, verfolgen, abbrechen, fortsetzen, Bericht) |
 | Memory-Verwaltung | ⬜ mit Memory-Anbindung |
 | Trainings- und Evaluationsstatus | ⬜ mit Trainingspipeline |
 
@@ -147,8 +147,8 @@ Nicht vorhandene Bereiche werden in der UI **nicht** als Attrappe angezeigt.
 |---|---|---|
 | 1 | Bestandsaufnahme, dieses Dokument, Modell- und Lern-Architektur | ✅ |
 | 2 | Desktop-App (Fenster, Icon, Core-Steuerung, MSI-Integration, CI-Test) | ✅ |
-| 3 | Research Engine (minimaler echter Durchlauf mit Checkpointing, Audit, Bericht) | ⬜ nächster Schritt |
-| 4 | Knowledge Store + Retrieval (Wissensverbesserung ohne Training), Memory-Anbindung | ⬜ |
+| 3 | Research Engine (Durchlauf mit Checkpointing, Audit, Bericht, Wissensspeicher) | ✅ |
+| 4 | Retrieval der Erkenntnisse im Chat mit Quellen, Memory-Anbindung | ⬜ nächster Schritt |
 | 5 | Datensatz- und Trainingspipeline (Versionierung, Splits, Leak-Check, Trainer-Adapter) | ⬜ |
 | 6 | Resource Governor, Research/Training-Status in der UI | ⬜ |
 | 7 | Erstes Fine-Tuning auf geeigneter Hardware + unabhängige Evaluation | ⬜ hardwareabhängig |

@@ -1,7 +1,7 @@
 # NOVA – Research Engine und kontinuierliches Lernen
 
-Stand: 2026-10-09 · Status: **Architektur** – Research Engine und Lernpipeline sind noch
-**nicht implementiert** (geplant als nächste Abschnitte, `nova-product-architecture.md` §7).
+Stand: 2026-10-10 · Status: Research Engine und Knowledge Store **implementiert** (`research/`);
+Lernpipeline (Datensätze, Training) **noch nicht** – siehe §6.
 
 ## 1. Grundsatz
 
@@ -18,7 +18,7 @@ RESEARCH → SOURCE VALIDATION → KNOWLEDGE EXTRACTION ─┬─► Knowledge S
                                                           → MODEL VERSION → APPROVAL
 ```
 
-## 2. Research Engine (`research/`, geplant)
+## 2. Research Engine (`research/`)
 
 ### Arbeitszyklus (kein Dauer-Token-Generieren)
 
@@ -97,11 +97,39 @@ mit einem anderen Modell als dem trainierten, und nie als alleiniges Freigabekri
 
 ## 6. Status
 
-| Teil | Status |
-|---|---|
-| Architektur (dieses Dokument) | ✅ |
-| Research Engine | ⬜ nächster Abschnitt |
-| Knowledge Store + Retrieval mit Quellen | ⬜ |
+| Teil | Status | Nachweis |
+|---|---|---|
+| Architektur (dieses Dokument) | ✅ | – |
+| Research Engine: Planer, Such-Adapter (SearXNG, Brave), höflicher Abruf (robots.txt, Rate Limit, Größen-/Typlimit, keine Paywall-Umgehung), Deduplizierung (URL + Hash + Nahdubletten), Quellenbewertung mit Begründung, Extraktion mit **wörtlicher Zitatprüfung**, Gleich-/Widerspruchserkennung, Klassifikation, Budget, Checkpoint, Abbruch/Pause/Fortsetzen, Audit, Bericht | ✅ implementiert + getestet | `tests/research/` (simuliertes Web inkl. Prompt-Injection), Browser-E2E, echter Lauf gegen erreichbare Webseiten (§7) |
+| Bedienung: UI (Research-Bereich), CLI `nova research`, API `/research/*` | ✅ | Tests, E2E |
+| Knowledge Store (SQLite/FTS5): speichern, suchen, veraltet markieren, löschen | ✅ | Tests |
+| Retrieval der Erkenntnisse **im Chat** mit Quellenangaben | ⬜ nächster Schritt |
 | Datensatzpipeline, Splits, Leak-Check | ⬜ |
-| Trainings-Adapter (TRL/PEFT), Dry-Run | ⬜ |
+| Trainings-Adapter (TRL/PEFT), Hardware-Probelauf | ⬜ |
 | Eval-Vergleich Basis vs. Checkpoint, Freigabe-Gate | ⬜ (Evaluationsrahmen vorhanden) |
+| Zeitgesteuerte Recherche („nach Plan“) | ⬜ (heute nur auf Auftrag) |
+| Zentrale Ressourcensteuerung | ⬜ heute: höchstens 1 Research-Lauf gleichzeitig; Modellaufrufe teilen sich die Engine mit dem Chat |
+
+## 7. Bedienung und tatsächlich ausgeführte Läufe
+
+```powershell
+nova research config --provider searxng --url http://127.0.0.1:8888   # oder: --provider brave (Key in NOVA_BRAVE_API_KEY)
+nova research start "Frage …" --minutes 120 --max-sources 40 [--url https://… ]
+nova research list | show <id> | report <id> | resume <id>
+nova research knowledge "suchbegriff"
+```
+
+Strg+C pausiert einen Lauf (fortsetzbar). In der UI: Seitenleiste → Lupe → Research.
+
+Ehrlicher Stand der ausgeführten Läufe (2026-10-10):
+* **Mit Modell** (Planung, Extraktion, Abgleich): nur gegen ein **simuliertes** Web mit einem
+  skriptbaren Test-Modell. Ein echter Lauf mit Sprachmodell braucht ein lokales Modell auf dem
+  PC des Nutzers – in der Entwicklungsumgebung gibt es keins, und deren Netzwerkrichtlinie
+  sperrt u. a. Hugging Face.
+* **Echtes Web, ohne Modell und ohne Suchanbieter:** Start-URLs auf pypi.org und
+  raw.githubusercontent.com wurden echt abgerufen (robots.txt geprüft, Snapshots, Bewertung,
+  Tracking-Variante als bekannt erkannt); gesperrte Hosts wurden korrekt als „robots.txt not
+  reachable – not fetched“ protokolliert.
+* **Ohne Suchanbieter** sucht NOVA nicht im Web. Für echte Websuche braucht es eine SearXNG-
+  Instanz oder einen Brave-API-Schlüssel (Bedingungen beachten: Brave untersagt Training mit
+  den Ergebnissen – solche Quellen sind für Weg 2 auszuschließen; die Herkunft wird gespeichert).
