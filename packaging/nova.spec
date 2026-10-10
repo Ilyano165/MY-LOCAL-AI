@@ -13,7 +13,9 @@ BUILD = ROOT / "build" / "packaging"
 
 hidden = collect_submodules("uvicorn")
 ICON = str(ROOT / "packaging" / "assets" / "nova.ico")
-for package in ("api", "router", "models", "agents", "tools", "memory", "evaluation", "desktop"):
+for package in (
+    "api", "router", "models", "agents", "tools", "memory", "evaluation", "desktop", "research"
+):
     hidden += collect_submodules(package)
 
 datas = [

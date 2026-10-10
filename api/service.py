@@ -51,6 +51,8 @@ from models.base import (
 from models.capabilities import ModelMetadata
 from models.inference import InferenceEngine, ProviderRegistry
 from models.model_registry import ModelRegistry
+from research.llm import EngineModel
+from research.manager import ResearchManager
 from router.availability import ProviderAvailability
 from router.base import NoModelAvailableError, RoutingDecision, RoutingRequest
 from router.learned_router import LearnedRanker, LearnedRouter
@@ -214,6 +216,12 @@ class NovaService:
                 event, integration=record.owner, task=record.id, status=record.status.value
             ),
         )
+        self.research = ResearchManager(
+            layout.research,
+            knowledge_path=layout.knowledge_db,
+            config_path=layout.research_config,
+            model_factory=self._research_model,
+        )
         self.settings_store = SettingsStore(data / "ui_settings.json")
         self.uploads = data / "uploads"
         self.runs: dict[str, Run] = {}
@@ -266,7 +274,15 @@ class NovaService:
         except Exception as exc:  # Status-Infos dürfen den Start nie verhindern
             logger.warning("Hardware-Erkennung fehlgeschlagen: %s", exc)
 
+    async def _research_model(self) -> EngineModel | None:
+        """Research nutzt dieselbe InferenceEngine – aber nur, wenn ein Modell erreichbar ist."""
+        if len(self.engine.models) == 0:
+            return None
+        status = await self.models_status()
+        return EngineModel(self.engine) if status["any_available"] else None
+
     async def shutdown(self) -> None:
+        await self.research.shutdown()
         await self.agent_tasks.shutdown()
         self.integrations.close()
         for run in list(self.runs.values()):

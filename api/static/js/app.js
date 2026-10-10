@@ -1,6 +1,7 @@
 // NOVA UI – Controller. Spricht ausschließlich mit der NOVA API (api.js).
 
 import { desktopPanel, handleDesktopEvent, initDesktop } from "./desktop.js";
+import { formToRequest, hasActiveRun, renderResearchForm, renderRuns } from "./research.js";
 import { api, ApiError, setToken } from "./api.js";
 import { renderMarkdown, escapeHtml } from "./markdown.js";
 import { responseStats, liveLine, dayGroup, formatBytes, formatDuration, categoryLabel } from "./format.js";
@@ -614,6 +615,92 @@ function openSetup() {
   renderSetup();
 }
 
+// ----------------------------------------------------------------- Research
+
+let researchTimer = null;
+
+async function renderResearch(keepForm = false) {
+  const body = $("research-body");
+  let status;
+  let runs;
+  try {
+    [status, { runs }] = await Promise.all([api.researchStatus(), api.researchRuns()]);
+  } catch (err) {
+    body.innerHTML = `<div class="error-card"><div class="err-title">${escapeHtml(err.message)}</div></div>`;
+    return;
+  }
+  const modelAvailable = !!(state.modelStatus && state.modelStatus.any_available);
+  if (!keepForm || !$("research-form")) {
+    body.innerHTML = `${renderResearchForm(status, modelAvailable)}<div class="panel"><h3>Runs</h3><div id="research-runs"></div></div><div id="research-report"></div>`;
+  }
+  $("research-runs").innerHTML = renderRuns(runs);
+  clearTimeout(researchTimer);
+  if (!$("research-drawer").hidden && hasActiveRun(runs)) {
+    researchTimer = setTimeout(() => renderResearch(true), 2000);
+  }
+}
+
+async function showResearchReport(id) {
+  const box = $("research-report");
+  box.innerHTML = `<div class="panel"><div class="muted">Loading report…</div></div>`;
+  try {
+    const { markdown } = await api.researchReport(id);
+    box.innerHTML = `<div class="panel research-report"><div class="md">${renderMarkdown(markdown)}</div></div>`;
+    box.scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (err) {
+    box.innerHTML = `<div class="error-card"><div class="err-title">${escapeHtml(err.message)}</div></div>`;
+  }
+}
+
+async function researchSubmit(e) {
+  if (e.target.id === "research-config") {
+    e.preventDefault();
+    try {
+      await api.researchConfig({ provider: "searxng", url: e.target.url.value.trim() });
+      await renderResearch();
+    } catch (err) {
+      alert(err.message);
+    }
+    return;
+  }
+  if (e.target.id !== "research-form") return;
+  e.preventDefault();
+  const error = $("research-error");
+  error.hidden = true;
+  try {
+    await api.researchStart(formToRequest(e.target));
+    e.target.reset();
+    await renderResearch(true);
+  } catch (err) {
+    error.textContent = err.message;
+    error.hidden = false;
+  }
+}
+
+async function researchClick(e) {
+  const btn = e.target.closest("[data-research-report],[data-research-cancel],[data-research-resume]");
+  if (!btn) return;
+  const { researchReport, researchCancel, researchResume } = btn.dataset;
+  try {
+    if (researchReport) return showResearchReport(researchReport);
+    btn.disabled = true;
+    if (researchCancel) await api.researchCancel(researchCancel);
+    if (researchResume) await api.researchResume(researchResume);
+    await renderResearch(true);
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function openResearch() {
+  $("status-drawer").hidden = true;
+  $("setup-drawer").hidden = true;
+  $("research-drawer").hidden = false;
+  renderResearch();
+}
+
 function openStatus() {
   $("status-drawer").hidden = false;
   renderStatusPanel(true);
@@ -803,6 +890,11 @@ function bind() {
     if (btn) startDownload(btn.dataset.download);
   });
   $("close-status").addEventListener("click", () => ($("status-drawer").hidden = true));
+  $("open-research").addEventListener("click", openResearch);
+  $("close-research").addEventListener("click", () => ($("research-drawer").hidden = true));
+  $("refresh-research").addEventListener("click", () => renderResearch(true));
+  $("research-body").addEventListener("submit", researchSubmit);
+  $("research-body").addEventListener("click", researchClick);
   $("refresh-status").addEventListener("click", () => renderStatusPanel(true));
   for (const type of ["click", "change"]) {
     $("status-body").addEventListener(type, (e) => handleDesktopEvent(e, () => renderStatusPanel(true)));
@@ -821,6 +913,7 @@ function bind() {
       $("settings-modal").hidden = true;
       $("status-drawer").hidden = true;
       $("setup-drawer").hidden = true;
+      $("research-drawer").hidden = true;
       closeSidebar();
     }
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "o") {

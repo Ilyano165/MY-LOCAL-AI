@@ -66,6 +66,18 @@ class DataLayout:
     def service_pid(self) -> Path:
         return self.root / "nova-service.json"
 
+    @property
+    def research(self) -> Path:
+        return self.root / "research"
+
+    @property
+    def research_config(self) -> Path:
+        return self.root / "research.json"
+
+    @property
+    def knowledge_db(self) -> Path:
+        return self.root / "knowledge.db"
+
     def ensure(self) -> DataLayout:
         for directory in (self.root, self.logs, self.models):
             directory.mkdir(parents=True, exist_ok=True)

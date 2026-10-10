@@ -15,6 +15,7 @@ Ohne ``--config`` nutzt NOVA ``<Datenverzeichnis>/models.toml``; fehlt sie, star
 from __future__ import annotations
 
 import argparse
+import asyncio
 import contextlib
 import json
 import logging
@@ -332,6 +333,124 @@ def cmd_integrations(args: argparse.Namespace) -> int:
 # ---------------------------------------------------------------------- Modelle
 
 
+# ---------------------------------------------------------------------- Research
+
+
+def _research_service(args: argparse.Namespace) -> Any:
+    """NovaService mit derselben Modellkonfiguration wie ``serve`` (Setup-Modus ohne Modell)."""
+    from api.service import NovaService
+
+    layout = DataLayout(args.data_dir)
+    config_path = layout.models_config if layout.models_config.is_file() else None
+    config = ApiConfig(
+        models_config=config_path,
+        dev_mode=config_path is None,
+        data_dir=args.data_dir,
+        mode="normal" if config_path else "setup",
+    )
+    return NovaService(config)
+
+
+async def _run_research_foreground(svc: Any, run_id: str) -> dict[str, Any]:
+    """Wartet auf den Lauf; Strg+C pausiert ihn (fortsetzbar), statt Daten zu verlieren."""
+    from research.manager import summary
+
+    manager = svc.research
+    last = ""
+    try:
+        while run_id in manager._active:
+            info = summary(manager._active[run_id].state)
+            c = info["counts"]
+            line = (
+                f"{info['status']}: {c['searches']} searches, {c['sources']} sources, "
+                f"{c['claims']} statements, {c['errors']} errors, {info['active_seconds']:.0f} s"
+            )
+            if line != last:
+                print(line, flush=True)
+                last = line
+            await asyncio.sleep(1)
+    except (KeyboardInterrupt, asyncio.CancelledError):
+        print("Pausing – resume later with: nova research resume " + run_id, flush=True)
+    finally:
+        await svc.shutdown()
+    data: dict[str, Any] = manager.get(run_id)
+    return data
+
+
+def cmd_research(args: argparse.Namespace) -> int:
+    from research.engine import Budget
+    from research.manager import ResearchError
+
+    if args.action == "config":
+        svc = _research_service(args)
+        try:
+            if args.provider:
+                search = {"provider": args.provider}
+                if args.url:
+                    search["url"] = args.url
+                if args.api_key_env:
+                    search["api_key_env"] = args.api_key_env
+                svc.research.set_config(search)
+            _print_json({**svc.research.status(), "config": svc.research.config()})
+        except ResearchError as exc:
+            raise SystemExit(exc.message) from exc
+        finally:
+            asyncio.run(svc.shutdown())
+        return 0
+    if args.action == "list":
+        svc = _research_service(args)
+        _print_json(svc.research.list_runs())
+        asyncio.run(svc.shutdown())
+        return 0
+    if args.action in ("show", "report"):
+        if not args.target:
+            raise SystemExit("research run id required")
+        svc = _research_service(args)
+        try:
+            if args.action == "show":
+                _print_json(svc.research.get(args.target))
+            else:
+                print(svc.research.report(args.target)["markdown"])
+        except ResearchError as exc:
+            raise SystemExit(exc.message) from exc
+        finally:
+            asyncio.run(svc.shutdown())
+        return 0
+    if args.action in ("start", "resume"):
+        if not args.target:
+            raise SystemExit("objective (start) or run id (resume) required")
+
+        async def go() -> dict[str, Any]:
+            svc = _research_service(args)
+            try:
+                if args.action == "start":
+                    budget = Budget(
+                        max_duration_s=args.minutes * 60,
+                        max_sources=args.max_sources,
+                        max_searches=args.max_searches,
+                        max_fetches=max(args.max_sources * 2, 10),
+                    )
+                    started = await svc.research.start(args.target, budget, args.url or [])
+                else:
+                    started = await svc.research.resume(args.target)
+            except ResearchError as exc:
+                await svc.shutdown()
+                raise SystemExit(exc.message) from exc
+            print(f"Research run {started['id']} started", flush=True)
+            return await _run_research_foreground(svc, started["id"])
+
+        result = asyncio.run(go())
+        print(f"Finished with status {result['status']}: {result['stop_reason']}")
+        print(f"Report: {DataLayout(args.data_dir).research / result['id'] / 'report.md'}")
+        return 0 if result["status"] in ("completed", "budget_exhausted") else 1
+    if args.action == "knowledge":
+        svc = _research_service(args)
+        _print_json(svc.research.knowledge.search(args.target or ""))
+        asyncio.run(svc.shutdown())
+        return 0
+    return 2
+
+
 def cmd_models(args: argparse.Namespace) -> int:
     import asyncio
 
@@ -463,6 +582,19 @@ def parser() -> argparse.ArgumentParser:
     models.add_argument("id", nargs="?")
     models.add_argument("--accept-license", action="store_true")
     models.set_defaults(func=cmd_models)
+
+    research = sub.add_parser("research", help="web research runs and knowledge")
+    research.add_argument(
+        "action", choices=["start", "resume", "list", "show", "report", "config", "knowledge"]
+    )
+    research.add_argument("target", nargs="?", help="objective (start), run id, or query")
+    research.add_argument("--minutes", type=float, default=60)
+    research.add_argument("--max-sources", type=int, default=30)
+    research.add_argument("--max-searches", type=int, default=20)
+    research.add_argument("--url", action="append", help="seed URL (repeatable)")
+    research.add_argument("--provider", choices=["none", "searxng", "brave"])
+    research.add_argument("--api-key-env", help="environment variable holding the API key")
+    research.set_defaults(func=cmd_research)
 
     data = sub.add_parser("data", help="user data")
     data.add_argument("action", choices=["path", "purge"])

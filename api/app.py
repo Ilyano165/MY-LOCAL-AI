@@ -21,13 +21,15 @@ from urllib.parse import urlsplit
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from api.config import ApiConfig
 from api.conversations import NotFoundError
 from api.service import AttachmentIn, NovaService, ServiceError
 from api.v1 import create_routers
 from api.version import __version__
+from research.engine import Budget
+from research.manager import ResearchError
 
 STATIC = Path(__file__).resolve().parent / "static"
 _UPLOAD_NAME = re.compile(r"^[0-9a-f]{16}\.(png|jpg|webp|gif)$")
@@ -55,6 +57,22 @@ class AgentBody(BaseModel):
 class DownloadBody(BaseModel):
     id: str = Field(min_length=1, max_length=80)
     accept_license: bool = False
+
+
+class ResearchStartBody(BaseModel):
+    objective: str = Field(min_length=5, max_length=2000)
+    duration_minutes: float = Field(default=60, gt=0, le=24 * 60)
+    max_sources: int = Field(default=30, ge=1, le=500)
+    max_searches: int = Field(default=20, ge=1, le=500)
+    seed_urls: list[str] = Field(default_factory=list, max_length=50)
+
+
+class ResearchConfigBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")  # z. B. „api_key“ wird abgelehnt, nie gespeichert
+
+    provider: str = Field(pattern="^(none|searxng|brave)$")
+    url: str | None = Field(default=None, max_length=500)
+    api_key_env: str | None = Field(default=None, pattern="^[A-Z][A-Z0-9_]{2,63}$")
 
 
 class StopBody(BaseModel):
@@ -160,6 +178,10 @@ def create_app(config: ApiConfig, *, service: NovaService | None = None) -> Fast
     async def service_error(_request: Request, exc: ServiceError) -> JSONResponse:
         return _error(exc.status, exc.code, exc.message, exc.detail)
 
+    @app.exception_handler(ResearchError)
+    async def research_error(_request: Request, exc: ResearchError) -> JSONResponse:
+        return _error(exc.status, exc.code, exc.message)
+
     @app.exception_handler(NotFoundError)
     async def not_found(_request: Request, exc: NotFoundError) -> JSONResponse:
         return _error(404, "not_found", f"Not found: {exc.args[0]}")
@@ -214,6 +236,50 @@ def create_app(config: ApiConfig, *, service: NovaService | None = None) -> Fast
         return {"run_id": body.run_id, "stopped": svc.stop(body.run_id)}
 
     # ------------------------------------------------------------------ Status
+
+    # ------------------------------------------------------------------ Research
+
+    @app.get("/research/status")
+    async def research_status() -> dict[str, Any]:
+        return {**svc.research.status(), "config": svc.research.config()}
+
+    @app.put("/research/config")
+    async def research_config(body: ResearchConfigBody) -> dict[str, Any]:
+        return svc.research.set_config(body.model_dump(exclude_none=True))
+
+    @app.get("/research/runs")
+    async def research_runs() -> dict[str, Any]:
+        return {"runs": svc.research.list_runs()}
+
+    @app.post("/research/runs", status_code=202)
+    async def research_start(body: ResearchStartBody) -> dict[str, Any]:
+        budget = Budget(
+            max_duration_s=body.duration_minutes * 60,
+            max_sources=body.max_sources,
+            max_searches=body.max_searches,
+            max_fetches=max(body.max_sources * 2, 10),
+        )
+        return await svc.research.start(body.objective, budget, body.seed_urls)
+
+    @app.get("/research/runs/{run_id}")
+    async def research_run(run_id: str) -> dict[str, Any]:
+        return svc.research.get(run_id)
+
+    @app.get("/research/runs/{run_id}/report")
+    async def research_report(run_id: str) -> dict[str, Any]:
+        return svc.research.report(run_id)
+
+    @app.post("/research/runs/{run_id}/cancel")
+    async def research_cancel(run_id: str) -> dict[str, Any]:
+        return svc.research.cancel(run_id)
+
+    @app.post("/research/runs/{run_id}/resume")
+    async def research_resume(run_id: str) -> dict[str, Any]:
+        return await svc.research.resume(run_id)
+
+    @app.get("/knowledge")
+    async def knowledge_search(q: str = "", include_stale: bool = False) -> dict[str, Any]:
+        return {"findings": svc.research.knowledge.search(q[:300], include_stale=include_stale)}
 
     @app.get("/models/catalog")
     async def model_catalog() -> dict[str, Any]:

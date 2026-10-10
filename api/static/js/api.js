@@ -136,6 +136,13 @@ export const api = {
   stop: (runId) => request("POST", "/agent/stop", { run_id: runId }),
   modelCatalog: () => request("GET", "/models/catalog"),
   startDownload: (id, acceptLicense) => request("POST", "/models/downloads", { id, accept_license: acceptLicense }),
+  researchStatus: () => request("GET", "/research/status"),
+  researchConfig: (config) => request("PUT", "/research/config", config),
+  researchRuns: () => request("GET", "/research/runs"),
+  researchStart: (body) => request("POST", "/research/runs", body),
+  researchReport: (id) => request("GET", `/research/runs/${encodeURIComponent(id)}/report`),
+  researchCancel: (id) => request("POST", `/research/runs/${encodeURIComponent(id)}/cancel`),
+  researchResume: (id) => request("POST", `/research/runs/${encodeURIComponent(id)}/resume`),
   chatStream: (body, onEvent, signal) => stream("/chat/stream", body, onEvent, signal),
   agentStream: (body, onEvent, signal) => stream("/agent/run", body, onEvent, signal),
 };

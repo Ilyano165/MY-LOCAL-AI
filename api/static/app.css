@@ -88,6 +88,15 @@ code, pre { font-family: var(--mono); }
 .primary-btn { padding: 8px 16px; border-radius: 9px; border: 0; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; font-weight: 600; font-size: 14px; }
 .primary-btn:hover { filter: brightness(1.08); }
 .only-mobile { display: none; }
+.drawer.drawer-wide { width: min(720px, 100%); }
+.research-form { display: grid; gap: 10px; }
+.research-form label { display: grid; gap: 4px; font-size: 13px; color: var(--text-2); }
+.research-form textarea, .research-form input, .research-config input { background: var(--bg); color: var(--text); border: 1px solid var(--line-2); border-radius: 8px; padding: 8px; font: inherit; }
+.research-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.research-config { display: flex; gap: 8px; margin: 6px 0 10px; }
+.research-config input { flex: 1; min-width: 0; }
+.research-run-body { min-width: 0; flex: 1; }
+.research-report { margin-top: 10px; }
 .desktop-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .ghost-btn.danger { color: #ff8a8a; border-color: rgba(255, 138, 138, 0.35); }
 .ghost-btn:disabled { opacity: 0.5; }

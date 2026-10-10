@@ -316,3 +316,26 @@ def test_browser_mode_has_no_desktop_panel(page: object, servers: dict[str, str]
     playwright_api.expect(page.locator("#status-body .panel").first).to_be_visible()  # type: ignore[attr-defined]
     assert page.locator("#desktop-panel").count() == 0  # type: ignore[attr-defined]
     assert page.locator("html").get_attribute("data-desktop") is None  # type: ignore[attr-defined]
+
+
+def test_research_mode_runs_and_shows_report(page: object, servers: dict[str, str]) -> None:
+    """Research über die Oberfläche: echter Lauf gegen einen echten lokalen Server (Start-URL)."""
+    expect = playwright_api.expect
+    page.goto(servers["dev"])  # type: ignore[attr-defined]
+    page.click("#open-research")  # type: ignore[attr-defined]
+    drawer = page.locator("#research-drawer")  # type: ignore[attr-defined]
+    expect(drawer).to_contain_text("No web search provider")
+    expect(drawer).to_contain_text("No local model is available")
+    page.fill("#research-form textarea[name=objective]", "What does the NOVA start page contain?")  # type: ignore[attr-defined]
+    page.fill("#research-form input[name=minutes]", "2")  # type: ignore[attr-defined]
+    page.fill("#research-form textarea[name=urls]", servers["dev"] + "/")  # type: ignore[attr-defined]
+    page.click("#research-form button[type=submit]")  # type: ignore[attr-defined]
+    run = page.locator(".research-run").first  # type: ignore[attr-defined]
+    expect(run).to_contain_text("What does the NOVA start page contain?")
+    expect(run).to_contain_text("Completed", timeout=20000)
+    expect(run).to_contain_text("1 sources")
+    run.locator("[data-research-report]").click()
+    report = page.locator("#research-report")  # type: ignore[attr-defined]
+    expect(report).to_contain_text("Research report")
+    expect(report).to_contain_text("No language model was used")
+    expect(report.locator("a", has_text="127.0.0.1").first).to_be_visible()
