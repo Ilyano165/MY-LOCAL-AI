@@ -69,6 +69,9 @@ class FakeInternet:
         self.model = b"GGUF" + b"\0" * 2000
         self.requests: list[str] = []
         self.fail_model_once = False
+        # wie llama.cpp seit 2026: „latest“ ist eine stabile Version ohne Binärdateien,
+        # die per nightly-tag.txt auf den Build mit den Windows-Archiven zeigt
+        self.nightly_tag = b"b9999\n"
 
     @staticmethod
     def sha(data: bytes) -> str:
@@ -93,6 +96,19 @@ class FakeInternet:
             ],
         }
 
+    def stable(self) -> dict[str, Any]:
+        return {
+            "tag_name": "v0.6.0",
+            "assets": [
+                {
+                    "name": "nightly-tag.txt",
+                    "size": 6,
+                    "digest": f"sha256:{self.sha(b'b9999\n')}",
+                    "browser_download_url": "https://github.com/dl/v0.6.0/nightly-tag.txt",
+                }
+            ],
+        }
+
     def hf(self) -> dict[str, Any]:
         return {
             "sha": "a" * 40,
@@ -110,8 +126,14 @@ class FakeInternet:
     def handler(self, request: httpx.Request) -> httpx.Response:
         url = str(request.url)
         self.requests.append(url)
-        if url.startswith("https://api.github.com/"):
+        if url.endswith("/releases/latest"):
+            return httpx.Response(200, json=self.stable())
+        if url.endswith("/releases/tags/b9999"):
             return httpx.Response(200, json=self.release())
+        if "/releases?" in url:
+            return httpx.Response(200, json=[self.stable(), self.release()])
+        if url.endswith("nightly-tag.txt"):
+            return httpx.Response(200, content=self.nightly_tag)
         if url.startswith("https://huggingface.co/api/models/"):
             return httpx.Response(200, json=self.hf())
         if url.endswith("cuda-12.4-x64.zip") and "cudart" not in url:
@@ -306,3 +328,23 @@ def test_non_windows_platform_is_reported(tmp_path: Path) -> None:
     m = manager(tmp_path, FakeInternet())
     m.platform = "linux"
     assert m.status()["platform_supported"] is False
+
+
+async def test_release_resolution_follows_stable_pointer_or_falls_back() -> None:
+    from api.runtime import resolve_llama_release
+
+    web = FakeInternet()
+    async with web.client() as client:
+        tag, artifacts = await resolve_llama_release(client, "cuda12")
+    assert tag == "b9999" and [a.name for a in artifacts] == [
+        "llama-b9999-bin-win-cuda-12.4-x64.zip",
+        "cudart-llama-bin-win-cuda-12.4-x64.zip",
+    ]
+    assert any(u.endswith("/releases/tags/b9999") for u in web.requests)
+    # manipulierte nightly-tag.txt (Prüfsumme passt nicht) → Zeiger ignoriert, Liste durchsucht
+    web = FakeInternet()
+    web.nightly_tag = b"b6666\n"
+    async with web.client() as client:
+        tag, artifacts = await resolve_llama_release(client, "cpu")
+    assert tag == "b9999" and artifacts[0].name == "llama-b9999-bin-win-cpu-x64.zip"
+    assert not any("/releases/tags/" in u for u in web.requests)

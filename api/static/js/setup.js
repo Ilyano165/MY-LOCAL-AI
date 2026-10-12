@@ -40,7 +40,7 @@ export function renderOneClick(status) {
   const rec = status.recommended || {};
   return `${failed}<p class="muted">${hardwareLine(status)}</p>
 <p>Recommended: <b>${escapeHtml(rec.label || "")}</b></p>
-<p class="muted">NOVA downloads the llama.cpp runtime and the model from their official sources (GitHub, Hugging Face), checks every file against its published SHA-256 and starts it locally. Download size: about 6 GB for the 9B model, about 3 GB for the 4B model.</p>
+<p class="muted">NOVA downloads the llama.cpp runtime and the model from their official sources (GitHub, Hugging Face), checks every file against its published SHA-256 and starts it locally. Download size: about 6 GB for the 9B model, about 3 GB for the 4B model, less for the 2B model. Progress and exact size appear during the download.</p>
 <label class="check"><input type="checkbox" id="runtime-accept"><span>I accept the model license (${escapeHtml(rec.base_license || "see model page")}) – <a href="https://huggingface.co/${escapeHtml(rec.repo || "")}" target="_blank" rel="noopener noreferrer">model page</a></span></label>
 <button class="primary-btn" id="runtime-setup" data-choice="${escapeHtml(rec.id || "")}">Set up NOVA automatically</button>`;
 }

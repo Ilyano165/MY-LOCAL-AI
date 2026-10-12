@@ -39,7 +39,7 @@
       "parameter_count": "4B",
       "context_length": 16384,
       "min_vram_gb": 0,
-      "min_ram_gb": 8,
+      "min_ram_gb": 7,
       "base_license": "apache-2.0",
       "reasoning_capability": "basic",
       "coding_capability": "basic",
@@ -49,6 +49,31 @@
       "training_base": {
         "repo": "Qwen/Qwen3.5-4B",
         "params_b": 4
+      }
+    },
+    {
+      "id": "general-2b",
+      "label": "Qwen3.5 2B (Q4_K_M) – for PCs with little memory (under 7 GB RAM)",
+      "repo": "unsloth/Qwen3.5-2B-GGUF",
+      "file_preference": [
+        "Qwen3.5-2B-Q4_K_M.gguf",
+        "-Q4_K_M.gguf",
+        "-UD-Q4_K_XL.gguf"
+      ],
+      "registry_name": "qwen3.5-2b",
+      "parameter_count": "2B",
+      "context_length": 8192,
+      "min_vram_gb": 0,
+      "min_ram_gb": 0,
+      "base_license": "apache-2.0",
+      "reasoning_capability": "basic",
+      "coding_capability": "basic",
+      "tool_calling": true,
+      "speed": "fast",
+      "memory_requirement": 2,
+      "training_base": {
+        "repo": "Qwen/Qwen3.5-2B",
+        "params_b": 2
       }
     }
   ]

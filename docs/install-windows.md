@@ -92,12 +92,17 @@ Modelle und die Runtime sind **nicht** im Installer enthalten. Beim ersten Start
 
 1. NOVA erkennt Grafikkarte (über `nvidia-smi`), VRAM und Arbeitsspeicher und empfiehlt ein
    Modell. Mit 8 GB VRAM und 16 GB RAM oder mehr (z. B. GTX 1080 Ti, 32 GB) ist es
-   **Qwen3.5 9B (Q4_K_M, rund 6 GB)**, sonst Qwen3.5 4B. Die Liste steht in
+   **Qwen3.5 9B (Q4_K_M, rund 6 GB)**. Ab 7 GB RAM ohne passende GPU wird es Qwen3.5 4B,
+   darunter Qwen3.5 2B. Die Liste steht in
    `_internal\config\recommended-models.json`.
 2. Lizenz des Modells lesen (Link wird angezeigt) und das Häkchen setzen, dann „Set up NOVA“.
 3. NOVA lädt:
    * **llama.cpp** (offizielles GitHub-Release, CUDA-12-Build für NVIDIA-Karten, sonst die
      CPU-Variante). Die SHA-256 stammt aus der GitHub-API.
+     llama.cpp veröffentlicht seit 2026 stabile Versionen (`v0.x`) ohne Programmdateien. NOVA
+     folgt deren `nightly-tag.txt` (Prüfsumme geprüft) zum zugehörigen Build `bNNNN`. Der
+     CUDA-12.4-Build enthält PTX-Code für Pascal: Die GTX 1080 Ti läuft, der erste Start dauert
+     etwas länger. CUDA-13-Builds unterstützen Pascal nicht und werden nie gewählt.
    * **das Modell** von Hugging Face, an einen festen Commit gebunden, mit der SHA-256 aus der
      Hugging-Face-API.
 
