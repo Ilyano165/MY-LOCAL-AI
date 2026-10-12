@@ -34,7 +34,7 @@ Wrapper um ein fremdes Modell:
 | Windows-Installer (MSI), CI mit Installationstest | `packaging/`, `.github/` | ✅ (Release v0.1.0) |
 | Desktop-Fenster | `desktop/` | ✅ dieser Schritt (siehe §5) |
 | Research Engine + Knowledge Store | `research/` | ✅ (ohne Retrieval im Chat) |
-| Trainings-/Datensatzpipeline | `training/` | 🟡 Datensätze, Probe, Plan ✅ · Runner/Eval-Gate ⬜ |
+| Trainings-/Datensatzpipeline | `training/`, `api/training_service.py` | ✅ Datensätze, Umgebung, Runner, Eval-Gate, Export, Aktivierung (GPU-Lauf ungetestet) |
 | Zentrale Ressourcensteuerung | `core/` | ⬜ |
 | Web-Zugriff (Suche/Fetch) | `research/` | ✅ nur für Research (SearXNG/Brave, robots.txt); der Agent hat weiterhin keine Web-Tools |
 
@@ -55,8 +55,8 @@ Runtime.
 │   ├─ Model Router (router/) ── Model Runtime-Adapter (models/)          │
 │   ├─ Agent Core (agents/) + Tools (tools/) mit Freigaben                │
 │   ├─ Memory & Retrieval (memory/, rag/)              ⬜ Anbindung        │
-│   ├─ Research Engine (research/)                     ⬜                  │
-│   ├─ Training Pipeline (training/) – separater Prozess ⬜               │
+│   ├─ Research Engine (research/)                     ✅                  │
+│   ├─ Training Pipeline (training/) – separater Prozess ✅               │
 │   ├─ Evaluation (evaluation/)                                           │
 │   └─ Resource Governor (core/) – ein Platz pro Modell-/GPU-Job  ⬜       │
 └───────────────┬─────────────────────────────┬───────────────────────────┘
@@ -87,9 +87,11 @@ Regeln:
 | `desktop.json` | Fenstergröße, „Core beim Schließen weiterlaufen lassen“ | ✅ dieser Schritt |
 | `memory.db` | Gedächtnis | ⬜ Anbindung |
 | `research/<run-id>/`, `research.json` | Plan, Checkpoint, Quellen-Snapshots, Audit, Bericht; Suchanbieter-Konfiguration (ohne Schlüssel) | ✅ |
-| `knowledge.db` | geprüfte Erkenntnisse mit Quellen | ✅ (Retrieval im Chat ⬜) |
+| `knowledge.db` | geprüfte Erkenntnisse mit Quellen | ✅ (inkl. Retrieval im Chat) |
 | `datasets/<name>/<version>/` | Trainingsdaten (train/val/test, Manifest, Hashes) | ✅ |
-| `checkpoints/nova-<version>/` | LoRA-Adapter / gemergte Gewichte, Model Card, Eval-Report | ⬜ |
+| `tools/`, `models/` | von der Ein-Klick-Einrichtung geladenes llama.cpp und GGUF-Modell (`runtime.json`) | ✅ |
+| `train-env/`, `trainer/` | separate Trainingsumgebung (PyTorch cu126) und Trainer-Skripte | ✅ |
+| `training-jobs/<job>/` | `job.json`, `status.json`, `adapter/`, `adapter.gguf`, `lineage.json`, `eval/report.json\|md`, `approval.json` | ✅ |
 
 ## 5. Desktop-Packaging – Entscheidung
 
@@ -137,7 +139,7 @@ PyPI-Metadaten pywebview 6.2.1 / pythonnet 3.2.1 (abgerufen 2026-10-09).
 | Core-Dienst starten/stoppen/neu starten aus der App | ✅ dieser Schritt (Desktop-Bridge) |
 | Research Mode | ✅ (starten, verfolgen, abbrechen, fortsetzen, Bericht) |
 | Memory-Verwaltung | ⬜ mit Memory-Anbindung |
-| Trainings- und Evaluationsstatus | ⬜ mit Trainingspipeline |
+| Trainings- und Evaluationsstatus (Training-Bereich) | ✅ |
 
 Nicht vorhandene Bereiche werden in der UI **nicht** als Attrappe angezeigt.
 
@@ -149,6 +151,7 @@ Nicht vorhandene Bereiche werden in der UI **nicht** als Attrappe angezeigt.
 | 2 | Desktop-App (Fenster, Icon, Core-Steuerung, MSI-Integration, CI-Test) | ✅ |
 | 3 | Research Engine (Durchlauf mit Checkpointing, Audit, Bericht, Wissensspeicher) | ✅ |
 | 4 | Retrieval der Erkenntnisse im Chat mit Quellen | ✅ (Memory-Anbindung ⬜) |
-| 5 | Datensatz-Pipeline (Versionierung, Splits, Leak-Check), Hardware-Probe, Trainingsplan | ✅ (Trainings-Runner ⬜) |
-| 6 | Resource Governor, Research/Training-Status in der UI | ⬜ |
-| 7 | Erstes Fine-Tuning auf geeigneter Hardware + unabhängige Evaluation | ⬜ hardwareabhängig |
+| 5 | Datensatz-Pipeline, Hardware-Probe, Trainingsplan, Runner, Evaluation, Freigabe, `--lora`-Aktivierung | ✅ |
+| 5a | Ein-Klick-Einrichtung (llama.cpp + empfohlenes Modell) | ✅ |
+| 6 | Resource Governor (heute: Runtime pausiert während GPU-Training), Research/Training-Status in der UI | 🟡 UI ✅ · zentraler Governor ⬜ |
+| 7 | Erstes Fine-Tuning auf der Hardware des Nutzers + unabhängige Evaluation | ⬜ vom Nutzer in der App auszuführen |

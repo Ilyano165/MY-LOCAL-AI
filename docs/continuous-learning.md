@@ -70,7 +70,7 @@ Generierungslauf.
 * Pflege: aktualisieren, als veraltet markieren, löschen (auch kaskadierend aus Datensatz-
   kandidaten, solange noch nicht trainiert).
 
-## 4. Weg 2 – Modellverbesserung durch Training (`training/`, geplant)
+## 4. Weg 2 – Modellverbesserung durch Training (`training/`, implementiert)
 
 | Schritt | Regel |
 |---|---|
@@ -80,7 +80,7 @@ Generierungslauf.
 | Versionierung | `datasets/<name>/<semver>/` mit `manifest.json` (Hashes je Datei, Herkunft, Filterstatistik) – unveränderlich |
 | Splits | train/val/test nach **Gruppen** (gleiche Quelle/gleiches Thema nie über Splits verteilt); festes Testset pro Fähigkeit |
 | Leck-Prüfung | n-Gramm-/Hash-Abgleich Testset ↔ Trainingsdaten und ↔ öffentliche Benchmark-Testsets |
-| Training | nur explizit (`nova train --dataset … --base …`), Ressourcenbudget, reproduzierbar (Seed, Config-Hash, Code-Commit, Basis-Revision) |
+| Training | nur explizit (Training-Bereich der App, „Start training“), Ressourcenbudget, reproduzierbar (Seed, Config-Hash, Code-Commit, Basis-Revision) |
 | Evaluation | Basis vs. Checkpoint auf identischen Suites; deterministische Checks und Referenzantworten; Regressionserkennung |
 | Freigabe | Gate aus `model-development.md` §6, menschliche Bestätigung |
 
@@ -106,8 +106,10 @@ mit einem anderen Modell als dem trainierten, und nie als alleiniges Freigabekri
 | Retrieval der Erkenntnisse **im Chat** mit Quellenangaben (`[K#]`, zitierte vs. nur bereitgestellte Quellen, abschaltbar; nicht über die Integrations-API) | ✅ implementiert + getestet |
 | Datensatzpipeline: Beispiele aus belegten Erkenntnissen + manuellen JSONL, Filter (Länge, Secrets, personenbezogene Daten, Dubletten, Nahdubletten, widersprüchliche Antworten), Ausschluss von Quellen mit Trainingsverbot, Gruppen-Splits stabil über Versionen, 8-Gramm-Leck-Prüfung, unveränderliche Versionen mit Manifest/SHA-256 | ✅ implementiert + getestet (`nova dataset`) |
 | Hardware-Probe (`python -m training.probe`) und Trainingsplan als Dry-Run (`nova train plan`) | ✅ implementiert, mit simulierter GPU getestet |
-| Trainings-Runner (TRL/PEFT), echter Probelauf auf GPU | ⬜ nächster Schritt – braucht den PC des Nutzers (`docs/training-setup.md`) |
-| Eval-Vergleich Basis vs. Checkpoint, Freigabe-Gate | ⬜ (Evaluationsrahmen vorhanden) |
+| Automatische Trainingsumgebung (uv, Python 3.12, PyTorch cu126, transformers/PEFT) | ✅ implementiert; Einrichtung unter Windows **nicht** getestet |
+| Trainings-Runner (transformers.Trainer + PEFT, LoRA/QLoRA, Verlust nur auf Antworten, Checkpoint-Fortsetzung, Abbruch, Lineage) | ✅ implementiert, echter CPU-Lauf mit winzigem Modell; **GPU/Qwen3.5 nicht getestet** |
+| Eval-Vergleich Basis vs. Checkpoint (Token-F1, Quellenangabe, Regressions-Suite), Freigabe-Gate, menschliche Freigabe | ✅ implementiert + getestet (E2E) |
+| GGUF-Export (llama.cpp-Konverter desselben Tags) und Aktivierung über `llama-server --lora` | ✅ Export echt getestet; Laden im echten llama-server **nicht** getestet |
 | Zeitgesteuerte Recherche („nach Plan“) | ⬜ (heute nur auf Auftrag) |
 | Zentrale Ressourcensteuerung | ⬜ heute: höchstens 1 Research-Lauf gleichzeitig; Modellaufrufe teilen sich die Engine mit dem Chat |
 

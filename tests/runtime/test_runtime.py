@@ -241,6 +241,10 @@ def wait_status(client: Any, want: str, timeout: float = 60) -> dict[str, Any]:
     raise AssertionError("setup did not finish")
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="the fake llama-server is a Python script; Windows can only start real .exe files",
+)
 def test_one_click_setup_end_to_end(
     make_client: Factory, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

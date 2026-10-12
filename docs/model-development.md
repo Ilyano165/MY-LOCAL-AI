@@ -105,19 +105,17 @@ Quellen: [PyTorch: Pascal aus CUDA-12.8-Builds entfernt](https://dev-discuss.pyt
 [Unsloth Requirements](https://docs.unsloth.ai/get-started/beginner-start-here/unsloth-requirements),
 [Schätzwert 8B auf 1080 Ti](https://willitrunai.com/can-run/llama-3.1-8b-on-gtx-1080-ti-11gb).
 
-## 4. Werkzeugkette (geplant)
+## 4. Werkzeugkette (umgesetzt)
 
 | Aufgabe | Werkzeug | Lizenz | Begründung |
 |---|---|---|---|
-| SFT / DPO | Hugging Face TRL + PEFT (LoRA/QLoRA) | Apache-2.0 | Referenzimplementierung, reproduzierbar |
-| Speicher-/Tempo-Optimierung | Unsloth (optional) | Apache-2.0 (Kern) | weniger VRAM auf Consumer-GPUs |
-| Export | llama.cpp `convert_hf_to_gguf.py` + `llama-quantize` | MIT | passt zur bestehenden Inferenz-Runtime |
-| Eval | NOVA `evaluation/` + feste Testsets | – | unabhängig vom trainierten Modell |
+| SFT | `transformers.Trainer` + PEFT (LoRA/QLoRA via bitsandbytes) | Apache-2.0 / MIT | TRL 1.15 braucht für seinen fused LM head Triton – gibt es nicht unter Windows/Pascal (`training-setup.md` §1) |
+| Export | llama.cpp `convert_lora_to_gguf.py` + `gguf-py` desselben Tags | MIT | Adapter wird zur Laufzeit über `--lora` geladen, kein Mergen/Requantisieren nötig |
+| Eval | `training/evaluate.py` (deterministisch) | – | unabhängig vom trainierten Modell |
 
-Training läuft als **separater Prozess** (`nova train …`), nie im Chat-Pfad, mit
-GPU-/Zeitbudget, Checkpoint-Wiederaufnahme und vollständigem Log. Unter Windows wird
-Training über WSL2/CUDA oder eine Linux-Maschine erwartet (TRL/bitsandbytes unter nativem
-Windows eingeschränkt) – vor Umsetzung zu verifizieren.
+Training läuft als **separater Prozess** in einer eigenen Umgebung (von NOVA eingerichtet),
+nie im Chat-Pfad, mit Checkpoint-Wiederaufnahme, Abbruch und vollständigem Log; nativ unter
+Windows, ohne WSL2. Bedienung: `docs/training-setup.md`.
 
 ## 5. Versionierung und Lineage
 
@@ -154,5 +152,10 @@ Ein Checkpoint wird nur freigegeben, wenn **alle** gelten:
 2. Basismodell lokal eingebunden und Baseline mit NOVAs Eval gemessen.
 3. Datensatz v0.1: ≥ einige hundert geprüfte Beispiele für **eine** klar definierte
    Zielfähigkeit (z. B. NOVA-Tool-Calling-Format oder Quellenzitate), mit getrenntem Testset.
-4. Trainingspipeline: Datensätze, Probe und Plan ✅; Runner ⬜ (`docs/training-setup.md`).
-5. Freigabe-Gate automatisiert.
+4. Trainingspipeline: Datensätze, Probe, Plan, Runner, Evaluation, Export ✅ (`docs/training-setup.md`).
+5. Freigabe-Gate automatisiert ✅ (vereinfachte Fassung von §6: Testset-Größe, F1-Gewinn,
+   Regressions-Suite, menschliche Freigabe; mehrere Seeds und Sicherheits-Suites fehlen noch).
+
+Ein so trainierter Adapter heißt in NOVA `nova-<modell>-<job>` – das ist ein **eigenes,
+nachweislich trainiertes** NOVA-Modell (Lineage + Eval-Report + Freigabe), nicht das
+unveränderte Basismodell.

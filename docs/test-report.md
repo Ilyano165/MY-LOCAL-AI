@@ -165,3 +165,27 @@ Linux-CI und [windows-release](https://github.com/Ilyano165/MY-LOCAL-AI/actions/
 
 Nicht ausgeführt: Probe auf echter Hardware, jegliches Training, Chat-Antworten eines echten
 Modells mit Zitaten (die Zitaterkennung wurde mit einer simulierten Runtime geprüft).
+
+## 8. Ein-Klick-Einrichtung und Training in der App
+
+Stand: 2026-10-12 · Code-Commits `a0ebec7` (Ein-Klick-Einrichtung) und `3bd590d` (Training).
+
+| Prüfung | Ergebnis |
+|---|---|
+| Suite lokal (Linux, inkl. Browser-E2E) | **991 bestanden**, 1 übersprungen (Lernzyklus ohne Trainingsumgebung), 2 abgewählt |
+| Linux-CI (`ci`) | grün |
+| Ein-Klick-Einrichtung: Hardware-Erkennung, Modellwahl nach VRAM/RAM, Auswahl der llama.cpp-Assets (CUDA 12 / CPU, nur mit Digest), HF-Datei mit fester Revision, Prüfsummen, sicheres Entpacken, `llama-server` als Kindprozess, `models.toml` mit Markierung, Hot-Reload | bestanden gegen lokale Test-Server und eine simulierte `llama-server` (`tests/runtime/`) |
+| **Lernzyklus Ende-zu-Ende über die API mit echtem PyTorch** (`tests/training/test_training_e2e.py`, torch 2.14 CPU, transformers 5.19, peft 0.21, winziges Zufallsmodell, 120 belegte Erkenntnisse) | **bestanden** (43,7 s): Datensatz 0.1.0 → LoRA-Training (Verlust sinkt) → Evaluation → Gate → GGUF-Export mit dem echten `convert_lora_to_gguf.py` (28 Tensoren, `adapter.type = lora`) → Freigabe → `--lora` aktiv, Modell `nova-general-4b-…` im Chat |
+| Gemessener Lerneffekt im E2E-Lauf | Token-F1 Basis **0,017** → trainiert **0,400** auf dem Testsplit (winziges Modell, synthetische Fakten – sagt nichts über Qwen3.5 aus) |
+| Regeln: kein Training ohne Umgebung, keine Aktivierung ohne Gate, keine Aktivierung bei falschem Basismodell, kein Training aus dem Chat | bestanden (`tests/training/test_training_service.py`, E2E) |
+| Training-Bereich der UI | JS-Unit-Tests + Browser-E2E bestanden |
+
+Nicht ausgeführt / nicht prüfbar in dieser Umgebung (kein Zugriff auf Hugging Face,
+download.pytorch.org und github.com-Releases; keine GPU):
+
+* echter Download von llama.cpp und Qwen3.5 durch die Ein-Klick-Einrichtung;
+* echter `llama-server` mit Modell und mit geladenem LoRA-Adapter;
+* Einrichtung der Trainingsumgebung mit uv unter Windows;
+* Training auf einer GPU, insbesondere GTX 1080 Ti (Pascal, fp32) mit bitsandbytes/QLoRA;
+* Qwen3.5 als Trainingsbasis (Architektur-Unterstützung in PEFT, Tensor-Namen im Konverter);
+* Trainingsdauer auf echter Hardware.

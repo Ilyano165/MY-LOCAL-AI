@@ -1,79 +1,123 @@
-# NOVA – Trainingsumgebung einrichten und Hardware prüfen
+# NOVA – Training: Umgebung, Ablauf, technische Entscheidungen
 
-Stand: 2026-10-10 · Ziel-PC: GTX 1080 Ti (11 GB), 32 GB RAM, i7 (Angabe des Nutzers)
+Stand: 2026-10-12 · Ziel-PC: GTX 1080 Ti (11 GB), 32 GB RAM, i7 (Angabe des Nutzers)
 
-> Status: Datensatz-Pipeline, Hardware-Probe und Trainingsplan sind **implementiert und
-> getestet**. Ein Trainingslauf ist **noch nicht implementiert und nie ausgeführt** worden.
-> Die Probe wurde nur mit simulierten PyTorch-Modulen getestet, nicht auf einer echten GPU.
+> **Status.** Diese Teile sind implementiert und in der Entwicklungsumgebung **echt**
+> durchlaufen (CPU, winziges Zufallsmodell):
+>
+> Datensatz → LoRA-Training → Evaluation mit Gate → GGUF-Export (llama.cpp-Konverter) →
+> Freigabe → Aktivierung über `--lora` → Chat.
+>
+> **Nicht** getestet:
+>
+> * Training auf einer echten GPU, auch nicht auf der GTX 1080 Ti;
+> * Qwen3.5 als Basismodell;
+> * bitsandbytes unter Windows;
+> * die automatische uv-Einrichtung unter Windows;
+> * ob ein echter `llama-server` den exportierten Adapter lädt.
+>
+> Details: [Testbericht](test-report.md).
 
-Die Trainingsumgebung ist **getrennt** von der installierten NOVA-App: PyTorch, Transformers
-usw. sind mehrere GB groß und gehören nicht in den Installer.
+Alles wird in der App bedient (Seitenmenü → **Training**). Die Trainingsumgebung ist von der
+installierten App **getrennt**: PyTorch und die Bibliotheken sind mehrere GB groß und gehören
+nicht in den Installer.
 
-## 1. Umgebung anlegen (Windows, PowerShell)
+## 1. Umgebung (automatisch)
 
-```powershell
-# Python 3.12 oder 3.13 installiert vorausgesetzt
-py -3.13 -m venv $env:LOCALAPPDATA\NOVA\train-env
-& $env:LOCALAPPDATA\NOVA\train-env\Scripts\Activate.ps1
-# PyTorch mit CUDA 12.6 – die letzten offiziellen Builds mit Pascal-Kernels (laut PyTorch bis 2.14)
-pip install torch --index-url https://download.pytorch.org/whl/cu126
-pip install transformers peft trl accelerate bitsandbytes
-```
+„Set up training environment“ führt diese Schritte aus. Fortschritt und Fehler stehen in
+`%LOCALAPPDATA%\NOVA\logs\training-setup.log`.
 
-Nicht `cu128` oder neuer verwenden: Diese Builds enthalten keine Kernels für die GTX 1080 Ti
-und scheitern erst zur Laufzeit. Wenn native Windows-Pakete (v. a. bitsandbytes) Probleme
-machen, ist WSL2 mit Ubuntu die Alternative (gleiche Befehle, Linux-Pfade).
+1. **uv** aus dem offiziellen GitHub-Release `astral-sh/uv` laden; die SHA-256 kommt aus der
+   GitHub-API und wird geprüft.
+2. `uv python install 3.12`, dann `uv venv` nach `%LOCALAPPDATA%\NOVA\train-env\`.
+3. **PyTorch** aus `https://download.pytorch.org/whl/cu126`. Ohne NVIDIA-GPU wird der CPU-Index
+   genutzt.
+4. transformers, peft, accelerate, huggingface_hub, safetensors, sentencepiece, protobuf,
+   numpy sowie pyyaml, tqdm und requests für den GGUF-Konverter; mit GPU zusätzlich
+   bitsandbytes.
+5. Die Trainer-Skripte (`runner.py`, `evaluate.py`, `export.py`, `probe.py`) nach
+   `%LOCALAPPDATA%\NOVA\trainer\` kopieren.
+6. Die **Hardware-Probe** läuft und schreibt `train-env\probe.json`.
 
-## 2. Hardware-Probe
+Eine vorhandene Umgebung lässt sich mit der Umgebungsvariable `NOVA_TRAIN_PYTHON=<python.exe>`
+nutzen. WSL2 ist dafür nicht nötig.
 
-Im NOVA-Quellordner (oder mit `PYTHONPATH` darauf):
+### Warum CUDA 12.6
 
-```powershell
-python -m training.probe > probe.json
-```
+Die GTX 1080 Ti ist Pascal (Compute Capability 6.1). Die PyTorch-Builds für cu128 und neuer
+enthalten keine sm_61-Kernels mehr; cu126 enthält sie laut PyTorch bis 2.14. Pascal hat kein
+bf16 und nur sehr langsames fp16. Die Probe wählt deshalb **fp32** als Rechengenauigkeit; die
+Gewichte liegen bei QLoRA trotzdem 4-bit (nf4) vor.
 
-`probe.json` enthält GPU, Compute Capability, VRAM, PyTorch-/CUDA-Version, die gefundenen
-Pakete, den empfohlenen Compute-Typ und **Probleme** (`"ready": false` → erst beheben).
-Für die 1080 Ti ist zu erwarten: Compute Capability 6.1, `compute_dtype: float32`, Hinweis
-„Pascal GPU … slow“.
+### Warum nicht TRL
 
-## 3. Datensatz bauen (in NOVA)
+TRL 1.15 (`SFTTrainer`) patcht immer einen *fused LM head*, der Triton braucht. Triton gibt es
+unter Windows nicht, und Pascal-GPUs werden nicht unterstützt. In der Entwicklungsumgebung
+brach das Training reproduzierbar ab („0 active drivers“). Der Runner nutzt deshalb
+`transformers.Trainer` mit PEFT und maskiert den Verlust selbst: Gelernt wird nur auf der
+Assistenten-Antwort, der Prompt-Präfix kommt aus dem Chat-Template. Beispiele, deren Template
+nicht präfix-stabil ist, werden verworfen, nicht falsch maskiert.
 
-```powershell
-nova dataset build nova-knowledge --from-knowledge [--manual eigene-beispiele.jsonl]
-nova dataset verify nova-knowledge@0.1.0
-```
+## 2. Datensatz
 
-* Nur **belegte** Research-Erkenntnisse; strittige, unbestätigte, veraltete und solche aus
-  Quellen mit Trainingsverbot (Brave Search) werden ausgeschlossen. Die Gründe stehen im Manifest.
-* Manuelle Beispiele: je Zeile `{"question": "...", "answer": "..."}`.
-* Versionen sind unveränderlich; `verify` erkennt nachträgliche Änderungen.
+„Build dataset from research knowledge“, oder per Kommandozeile:
+`nova dataset build nova-knowledge --from-knowledge [--manual eigene.jsonl]`.
 
-## 4. Trainingsplan (Dry-Run)
+* Nur **belegte** Research-Erkenntnisse. Strittige, unbestätigte und veraltete Erkenntnisse
+  sowie solche aus Quellen mit Trainingsverbot werden ausgeschlossen; die Gründe stehen im
+  Manifest.
+* Split nach Gruppen (gleiche Teilfrage nie in Train *und* Test), mit Leck-Prüfung.
+* Versionen sind unveränderlich, Hashes stehen im Manifest. `nova dataset verify` prüft sie.
 
-`train.toml`:
+## 3. Training
 
-```toml
-name = "nova-qwen3.5-4b"
-base_model = "Qwen/Qwen3.5-4B-Instruct"   # vor Nutzung Model Card + Lizenz prüfen
-base_revision = "<exakter Commit-Hash des Modells>"
-base_license = "apache-2.0"
-dataset = "nova-knowledge@0.1.0"
-max_seq_len = 1024
-batch_size = 1
-grad_accum = 16
-```
+| Einstellung | Wert |
+|---|---|
+| Basismodell | `training_base` aus `config/recommended-models.json`, an einen festen HF-Commit gebunden. Für den 9B-GGUF ist das `Qwen/Qwen3.5-9B`, also dieselbe Architektur, sonst passt der Adapter nicht. |
+| Methode | QLoRA (nf4, double quant) auf der GPU, LoRA auf der CPU |
+| Ziel-Layer | `all-linear` |
+| Standardwerte | r 16, alpha 32, lr 2e-4, Batch 1 × Gradient Accumulation 16, max. 1024 Token, Cosine-Schedule |
+| Robustheit | Checkpoints alle 50 Schritte (es wird automatisch fortgesetzt); Abbruch über eine `STOP`-Datei |
+| Ergebnis | `status.json` (live in der UI), `training.log`, `adapter/`, `lineage.json` (Modell-Commit, Datensatz-Hash, Konfig-Hash, Versionen, Gerät) |
 
-```powershell
-nova train plan --config train.toml --hardware probe.json
-```
+Während des GPU-Trainings wird `llama-server` gestoppt, damit genug VRAM frei ist. Danach
+startet er automatisch wieder.
 
-Der Plan prüft: feste Modell-Revision, unveränderter Datensatz mit Testsplit, geschätzter
-VRAM-Bedarf gegen die GPU, bitsandbytes für QLoRA. Er trainiert **nichts**.
+## 4. Evaluation und Gate
 
-## 5. Was als Nächstes kommt
+`evaluate.py` vergleicht **dasselbe** geladene Modell mit und ohne Adapter (greedy decoding):
 
-1. Trainings-Runner (TRL/PEFT) mit Checkpoint-Fortsetzung, Ressourcenlimit und Lineage –
-   zuerst als Probelauf mit einem 0.8B-Modell und wenigen Schritten auf deinem PC.
-2. Evaluation Basis vs. Checkpoint auf dem festen Testsplit + Regressionssuites.
-3. Freigabe-Gate (`docs/model-development.md` §6) und GGUF-Export.
+* Token-F1 gegen die Referenzaussage des Testsplits und ob die Antwort eine Referenzquelle nennt;
+* 10 feste Allgemeinfragen als Regressionsprüfung.
+
+Gate (Standard): mindestens 10 Testbeispiele, F1-Gewinn ≥ 0,02 und höchstens 1
+Allgemeinfrage schlechter als das Basismodell. Kein Modell bewertet sich selbst.
+
+## 5. Freigabe, Export, Aktivierung
+
+„Approve and activate“ erscheint nur bei erfülltem Gate. Vor der Aktivierung kommt eine
+Bestätigung, und das trainierte Basismodell muss dem laufenden Modell entsprechen. Dann:
+
+1. Quellcode von llama.cpp **im selben Tag** wie die installierte Runtime laden. Für das Zip
+   veröffentlicht GitHub keine Prüfsumme; NOVA protokolliert den Hash.
+2. `convert_lora_to_gguf.py` mit dem `gguf-py` desselben Tags. Das PyPI-Paket `gguf` passte in
+   der Entwicklung nicht zu den aktuellen Konverter-Skripten.
+3. `approval.json` (wer, wann, Gate, SHA-256 des Adapters) schreiben, dann `llama-server --lora`
+   starten. Das Modell heißt jetzt `nova-<modell>-<job>`.
+
+„Back to base model“ entfernt den Adapter wieder.
+
+## 6. Bekannte Risiken
+
+* **Qwen3.5-Architektur:**
+  * Laufen hybride Attention-Schichten ohne Triton-Kernels unter Windows schnell genug?
+  * Erfasst `all-linear` die richtigen Module?
+  * Benennt `convert_lora_to_gguf.py` die Tensoren für Qwen3.5 korrekt?
+
+  Alles drei ist ungetestet. Scheitert der 9B-Lauf, zuerst mit dem 4B-Modell probieren. Für
+  4B muss im Setup auch das 4B-GGUF aktiv sein.
+* **bitsandbytes unter Windows auf Pascal** ist nicht geprüft. Schlägt QLoRA fehl, steht das in
+  `training.log`.
+* **Dauer:** Auf der 1080 Ti mit fp32 sind für einige hundert Beispiele und 2 Epochen
+  Stunden realistisch. Das ist nicht gemessen. Die ETA in der UI kommt aus den echten
+  Schritten.

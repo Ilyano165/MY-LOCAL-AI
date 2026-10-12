@@ -5,12 +5,15 @@ Planung + Tools + Memory + RAG + Context Management + Self-Verification + Evalua
 
 **Status:** Phase 0 abgeschlossen; Model-Engine-Layer (`models/`), Agent Core (`agents/`), Tool-System (`tools/`), Memory (`memory/`), Verification Engine (`evaluation/`) Model Router (`router/`), Model-Benchmarking, Learned Router (nicht aktiviert) sowie lokale API
 und Web-Oberfläche (`api/`), Integrations-API (`/api/v1`, OpenAI-kompatibel `/v1`),
-Kommandozeile `nova`, Hintergrunddienst, Modell-Setup und Windows-Installer (MSI, CI-Pipeline)
+Kommandozeile `nova`, Hintergrunddienst, Windows-Installer (MSI, CI-Pipeline), Desktop-App,
+Ein-Klick-Einrichtung (llama.cpp + empfohlenes Modell), Research Engine mit Knowledge Store
+und Training in der App (Datensatz → LoRA/QLoRA → Evaluation → Freigabe → `--lora`)
 implementiert und getestet. Was davon wo geprüft ist: [Testbericht](docs/test-report.md).
 
 ## Benutzen
 
-**Windows:** MSI installieren → [Anleitung](docs/install-windows.md).
+**Windows:** MSI aus den [Releases](https://github.com/Ilyano165/MY-LOCAL-AI/releases) installieren → [Anleitung](docs/install-windows.md)
+(Ein-Klick-Einrichtung, eigenes Modell trainieren: [Training](docs/training-setup.md)).
 
 **Aus dem Quellcode:**
 

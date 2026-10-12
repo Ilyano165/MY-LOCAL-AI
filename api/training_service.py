@@ -61,6 +61,10 @@ TRAIN_PACKAGES = [
     "sentencepiece",
     "protobuf",
     "numpy",
+    # llama.cpp-Konverter (convert_lora_to_gguf.py + gguf-py)
+    "pyyaml",
+    "tqdm",
+    "requests",
 ]
 SCRIPTS = ("runner.py", "evaluate.py", "export.py", "probe.py")
 _JOB_ID = re.compile(r"^[a-z0-9][a-z0-9-]{2,63}$")

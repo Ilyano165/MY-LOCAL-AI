@@ -85,35 +85,59 @@ nova data path             # Datenordner anzeigen
 Fehler beim Start erscheinen als Meldungsfenster. Details stehen in
 `%LOCALAPPDATA%\NOVA\logs\desktop.log`, `launcher.log`, `service.log` und `nova.log`.
 
-## 4. Modell einrichten
+## 4. Modell einrichten (ein Klick)
 
-Modelle sind **nicht** im Installer enthalten. NOVA braucht zwei Dinge:
+Modelle und die Runtime sind **nicht** im Installer enthalten. Beim ersten Start zeigt NOVA
+„Set up NOVA“:
 
-1. **Eine lokale Runtime**, die ein Modell bereitstellt: llama.cpp `llama-server` oder Ollama.
-   Sie wird getrennt installiert, NOVA bringt keine mit.
-2. **`%LOCALAPPDATA%\NOVA\models.toml`**: welches Modell über welche Runtime erreichbar ist.
-   Eine Vorlage liegt unter `%LOCALAPPDATA%\Programs\NOVA\_internal\config\models.example.toml`.
+1. NOVA erkennt Grafikkarte (über `nvidia-smi`), VRAM und Arbeitsspeicher und empfiehlt ein
+   Modell. Mit 8 GB VRAM und 16 GB RAM oder mehr (z. B. GTX 1080 Ti, 32 GB) ist es
+   **Qwen3.5 9B (Q4_K_M, rund 6 GB)**, sonst Qwen3.5 4B. Die Liste steht in
+   `_internal\config\recommended-models.json`.
+2. Lizenz des Modells lesen (Link wird angezeigt) und das Häkchen setzen, dann „Set up NOVA“.
+3. NOVA lädt:
+   * **llama.cpp** (offizielles GitHub-Release, CUDA-12-Build für NVIDIA-Karten, sonst die
+     CPU-Variante). Die SHA-256 stammt aus der GitHub-API.
+   * **das Modell** von Hugging Face, an einen festen Commit gebunden, mit der SHA-256 aus der
+     Hugging-Face-API.
 
-Optional lädt NOVA GGUF-Dateien selbst herunter. Dazu kommen Einträge mit echter Adresse,
-SHA-256 und Lizenz in `%LOCALAPPDATA%\NOVA\model-catalog.json`. Die Vorlage ist
-`…\_internal\config\model-catalog.example.json`, deren Platzhalter bewusst abgelehnt werden.
-NOVA erfindet keine Download-Adressen. Vor jedem Download zeigt NOVA:
+   Downloads sind fortsetzbar. Eine falsche Prüfsumme verwirft die Datei.
+4. NOVA startet `llama-server` selbst als Kindprozess (nur `127.0.0.1`), schreibt
+   `%LOCALAPPDATA%\NOVA\models.toml` und lädt den Chat neu. Beim nächsten Start läuft das
+   automatisch.
 
-* die Größe und den freien Speicherplatz (+5 % Reserve);
-* den Arbeitsspeicher im Vergleich zu `min_ram_gb`: Ist zu wenig vorhanden, wird der Download blockiert;
-* die Lizenz, die ausdrücklich bestätigt werden muss.
+Alles liegt unter `%LOCALAPPDATA%\NOVA\` (`tools\`, `models\`). Eine eigene `models.toml`
+ohne NOVA-Markierung wird nie überschrieben.
 
-Downloads werden fortgesetzt, wenn sie unterbrochen wurden. Danach prüft NOVA die SHA-256 und
-die GGUF-Signatur. Bei einer falschen Prüfsumme wird die Datei verworfen.
+**Manuell (für Fortgeschrittene):** eigene Runtime (llama.cpp/Ollama) plus eigene
+`models.toml` nach der Vorlage `_internal\config\models.example.toml`. Alternativ können
+GGUF-Dateien über `model-catalog.json` mit `nova models download <id> --accept-license`
+geladen werden (Aufklappbereich „Advanced“ im Setup).
 
-```powershell
-nova models catalog
-nova models plan <id>
-nova models download <id> --accept-license
-```
+## 4a. Eigenes NOVA-Modell trainieren
 
-Danach `models.toml` anpassen und den Dienst neu starten:
-`nova service stop` und dann `nova open`.
+Im Seitenmenü auf **Training** (Doktorhut-Symbol) klicken:
+
+1. **Set up training environment:** NOVA lädt uv (mit GitHub-Prüfsumme), installiert
+   Python 3.12 und PyTorch mit CUDA 12.6 (die letzten Builds mit Kernels für die GTX 1080 Ti),
+   transformers, PEFT und bitsandbytes nach `%LOCALAPPDATA%\NOVA\train-env\`. Das sind
+   mehrere GB. Danach prüft eine Hardware-Probe GPU, VRAM und Compute-Typ.
+2. **Research** nutzen: Nur **belegte** Erkenntnisse gehen in das Training ein.
+3. **Build dataset from research knowledge:** Daraus entsteht ein versionierter, unveränderlicher
+   Datensatz mit Train/Val/Test-Split. Für die Freigabe braucht es mindestens 10 Testbeispiele.
+4. **Start training:** Das Basismodell muss zum laufenden Modell passen (bei Qwen3.5 9B ist das
+   `Qwen/Qwen3.5-9B`, rund 18 GB Download beim ersten Lauf). Auf der 1080 Ti läuft QLoRA in
+   fp32-Rechengenauigkeit. Der Chat pausiert in dieser Zeit, weil die GPU belegt ist.
+5. Danach folgt automatisch eine **Evaluation**: Basismodell und trainiertes Modell
+   beantworten die Testfragen. Gemessen werden Token-F1 gegen die Referenz, ob eine Quelle
+   genannt wird, und 10 allgemeine Kontrollfragen. Bewertet wird deterministisch, nicht durch
+   das Modell selbst.
+6. Nur wenn das Gate erfüllt ist, erscheint **Approve and activate**. Dann wandelt NOVA den
+   Adapter nach GGUF um (Konverter von llama.cpp in derselben Version) und startet
+   `llama-server --lora`. Das Modell heißt danach `nova-general-9b-<Datum>`. Mit
+   „Back to base model“ geht es zurück.
+
+Eine normale Chat-Anfrage startet nie ein Training.
 
 ## 5. Aktualisieren
 
@@ -156,6 +180,7 @@ OpenAI-kompatibel unter `http://127.0.0.1:8765/v1`.
   solange der Benutzer angemeldet ist.
 * Die Repository-Lizenz fehlt noch. Der Installer zeigt deshalb einen Hinweis statt eines
   Lizenztextes.
-* Runtimes (llama.cpp/Ollama) und Modelle werden nicht mitinstalliert.
+* Runtime und Modelle werden nicht mitinstalliert, sondern beim ersten Start geladen (Internet nötig).
+* Training auf der GTX 1080 Ti wurde **nicht** auf echter Hardware getestet (siehe Testbericht).
 * Ein Port-Konflikt auf 8765 wird gemeldet (der Dienst startet dann nicht). Ein anderer Port
   geht nur per Kommandozeile mit `--port`. Das Startmenü nutzt immer 8765.
