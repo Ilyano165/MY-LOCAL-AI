@@ -261,3 +261,8 @@ Zusätzlich gibt es Qwen3.5 2B für Rechner mit weniger als 7 GB RAM.
 
 **Nicht geprüft:** ob der echte `llama-server` mit Qwen3.5 `enable_thinking: false` umsetzt
 (laut README unterstützt). Die Antwortzeit auf dem Laptop des Nutzers ist nicht gemessen.
+
+Release: <https://github.com/Ilyano165/MY-LOCAL-AI/releases/tag/v0.2.2>
+([Lauf](https://github.com/Ilyano165/MY-LOCAL-AI/actions/runs/38272082334), Installationstest 20/20)
+
+`046bb907b0adc6647393fb9b3923e34b705ed44cf8ac3e2ab055c593185b86e3  NOVA-0.2.2-x64.msi`
