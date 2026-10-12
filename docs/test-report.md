@@ -174,6 +174,7 @@ Stand: 2026-10-12 · Code-Commits `a0ebec7` (Ein-Klick-Einrichtung) und `3bd590d
 |---|---|
 | Suite lokal (Linux, inkl. Browser-E2E) | **991 bestanden**, 1 übersprungen (Lernzyklus ohne Trainingsumgebung), 2 abgewählt |
 | Linux-CI (`ci`) | grün |
+| Windows-CI (`windows-release`, Suite ohne Browser-E2E + PyInstaller + MSI + Installationstest) | grün · Installationstest **20/20** (inkl. `_internal\trainer\runner.py` und Desktop-Fenster mit WebView2) |
 | Ein-Klick-Einrichtung: Hardware-Erkennung, Modellwahl nach VRAM/RAM, Auswahl der llama.cpp-Assets (CUDA 12 / CPU, nur mit Digest), HF-Datei mit fester Revision, Prüfsummen, sicheres Entpacken, `llama-server` als Kindprozess, `models.toml` mit Markierung, Hot-Reload | bestanden gegen lokale Test-Server und eine simulierte `llama-server` (`tests/runtime/`) |
 | **Lernzyklus Ende-zu-Ende über die API mit echtem PyTorch** (`tests/training/test_training_e2e.py`, torch 2.14 CPU, transformers 5.19, peft 0.21, winziges Zufallsmodell, 120 belegte Erkenntnisse) | **bestanden** (43,7 s): Datensatz 0.1.0 → LoRA-Training (Verlust sinkt) → Evaluation → Gate → GGUF-Export mit dem echten `convert_lora_to_gguf.py` (28 Tensoren, `adapter.type = lora`) → Freigabe → `--lora` aktiv, Modell `nova-general-4b-…` im Chat |
 | Gemessener Lerneffekt im E2E-Lauf | Token-F1 Basis **0,017** → trainiert **0,400** auf dem Testsplit (winziges Modell, synthetische Fakten – sagt nichts über Qwen3.5 aus) |
@@ -189,3 +190,11 @@ download.pytorch.org und github.com-Releases; keine GPU):
 * Training auf einer GPU, insbesondere GTX 1080 Ti (Pascal, fp32) mit bitsandbytes/QLoRA;
 * Qwen3.5 als Trainingsbasis (Architektur-Unterstützung in PEFT, Tensor-Namen im Konverter);
 * Trainingsdauer auf echter Hardware.
+
+## 9. Release v0.2.0
+
+Veröffentlicht über `windows-release` (manueller Start mit `release=true`,
+[Lauf](https://github.com/Ilyano165/MY-LOCAL-AI/actions/runs/38239603789), Commit `5c7de8a`):
+<https://github.com/Ilyano165/MY-LOCAL-AI/releases/tag/v0.2.0>.
+
+`51ac1b1d0f2e89801343e77ab80246cd428bb650b0f0cb018ab0a0e2c8e3660b  NOVA-0.2.0-x64.msi`
