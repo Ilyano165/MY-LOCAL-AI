@@ -3,6 +3,7 @@
 import { desktopPanel, handleDesktopEvent, initDesktop } from "./desktop.js";
 import { formToRequest, hasActiveRun, renderResearchForm, renderRuns } from "./research.js";
 import { renderKnowledge } from "./knowledge.js";
+import { SETUP_ACTIVE, renderOneClick } from "./setup.js";
 import { api, ApiError, setToken } from "./api.js";
 import { renderMarkdown, escapeHtml } from "./markdown.js";
 import { responseStats, liveLine, dayGroup, formatBytes, formatDuration, categoryLabel } from "./format.js";
@@ -546,16 +547,19 @@ function setupStep(n, title, html) {
 async function renderSetup() {
   const body = $("setup-body");
   let data;
+  let runtime;
   try {
-    data = await api.modelCatalog();
+    [data, runtime] = await Promise.all([api.modelCatalog(), api.runtimeStatus()]);
   } catch (err) {
     body.innerHTML = `<div class="error-card"><div class="err-title">${escapeHtml(err.message)}</div></div>`;
     return;
   }
   const status = state.modelStatus;
   const runtimeOk = status && status.any_available;
-  let html = setupStep(
-    1,
+  let html = setupStep(1, "One-click setup", renderOneClick(runtime));
+  html += `<details class="setup-advanced"><summary>Advanced: manual setup</summary>`;
+  html += setupStep(
+    "A",
     "Local model runtime",
     runtimeOk
       ? `<p class="muted">A model is available – NOVA is ready.</p>`
@@ -590,13 +594,21 @@ async function renderSetup() {
       })
       .join("");
   }
-  html += setupStep(2, "Download a model (optional)", models);
+  html += setupStep("B", "Download a model (optional)", models);
   if (data.installed && data.installed.length) {
-    html += setupStep(3, "Installed model files", data.installed.map((i) => `<div class="model-sub"><code>${escapeHtml(i.file)}</code></div>`).join("") + `<p class="muted">Point your runtime at the file (e.g. <code>llama-server -m &lt;file&gt;</code>) and add it to <code>models.toml</code>.</p>`);
+    html += setupStep("C", "Installed model files", data.installed.map((i) => `<div class="model-sub"><code>${escapeHtml(i.file)}</code></div>`).join("") + `<p class="muted">Point your runtime at the file (e.g. <code>llama-server -m &lt;file&gt;</code>) and add it to <code>models.toml</code>.</p>`);
   }
+  html += `</details>`;
   body.innerHTML = html;
   body.querySelectorAll(".progress-bar").forEach((bar) => bar.style.setProperty("--pct", `${bar.dataset.pct}%`));
-  const active = data.models.some((m) => m.download && ["downloading", "starting"].includes(m.download.status));
+  const runtimeBusy = SETUP_ACTIVE.has((runtime.setup || {}).status);
+  if (state.lastSetupStatus && SETUP_ACTIVE.has(state.lastSetupStatus) && runtime.setup.status === "completed") {
+    toast("NOVA is ready – the model is running.");
+    refreshStatus();
+    init();
+  }
+  state.lastSetupStatus = (runtime.setup || {}).status;
+  const active = runtimeBusy || data.models.some((m) => m.download && ["downloading", "starting"].includes(m.download.status));
   clearTimeout(setupTimer);
   if (active && !$("setup-drawer").hidden) setupTimer = setTimeout(renderSetup, 1000);
 }
@@ -888,9 +900,28 @@ function bind() {
   $("open-setup").addEventListener("click", openSetup);
   $("close-setup").addEventListener("click", () => ($("setup-drawer").hidden = true));
   $("refresh-setup").addEventListener("click", renderSetup);
-  $("setup-body").addEventListener("click", (e) => {
+  $("setup-body").addEventListener("click", async (e) => {
     const btn = e.target.closest("[data-download]");
     if (btn) startDownload(btn.dataset.download);
+    if (e.target.id === "runtime-setup") {
+      e.target.disabled = true;
+      try {
+        await api.runtimeSetup(e.target.dataset.choice, $("runtime-accept").checked);
+      } catch (err) {
+        toast(err.message, "err");
+      }
+      renderSetup();
+    }
+    if (e.target.id === "runtime-restart") {
+      e.target.disabled = true;
+      try {
+        await api.runtimeRestart();
+        refreshStatus();
+      } catch (err) {
+        toast(err.message, "err");
+      }
+      renderSetup();
+    }
   });
   $("close-status").addEventListener("click", () => ($("status-drawer").hidden = true));
   $("open-research").addEventListener("click", openResearch);

@@ -32,6 +32,7 @@ datas = [
     (str(ROOT / "evaluation" / "datasets"), "evaluation/datasets"),
     (str(ROOT / "config" / "models.example.toml"), "config"),
     (str(ROOT / "config" / "model-catalog.example.json"), "config"),
+    (str(ROOT / "config" / "recommended-models.json"), "config"),
     (str(BUILD / "VERSION"), "."),
 ]
 excludes = [

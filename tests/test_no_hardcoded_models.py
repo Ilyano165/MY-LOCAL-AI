@@ -20,6 +20,10 @@ SOURCE_DIRS = [
     "router",
     "evaluation",
     "scripts",
+    "api",
+    "research",
+    "training",
+    "desktop",
 ]
 
 # Bekannte Open-Weight-Modellfamilien. "llama.cpp" (Runtime) ist ausdrücklich erlaubt.

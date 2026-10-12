@@ -35,6 +35,7 @@ from api.conversations import ConversationStore, StoredMessage
 from api.integrations import IntegrationStore, RateLimiter
 from api.model_manager import CatalogError, ModelManager
 from api.paths import DataLayout
+from api.runtime import RuntimeManager
 from api.settings import Settings, SettingsStore
 from api.version import __version__
 from evaluation.benchmark_results import ProfileStore
@@ -108,6 +109,9 @@ IMAGE_TYPES = {
     "image/webp": ".webp",
     "image/gif": ".gif",
 }
+
+
+RECOMMENDED_MODELS = Path(__file__).resolve().parents[1] / "config" / "recommended-models.json"
 
 
 class ServiceError(Exception):
@@ -223,6 +227,8 @@ class NovaService:
             config_path=layout.research_config,
             model_factory=self._research_model,
         )
+        self.runtime = RuntimeManager(layout, RECOMMENDED_MODELS)
+        self._runtime_task: asyncio.Task[None] | None = None
         self.settings_store = SettingsStore(data / "ui_settings.json")
         self.uploads = data / "uploads"
         self.runs: dict[str, Run] = {}
@@ -261,8 +267,50 @@ class NovaService:
             )
         return RuleBasedRouter(self.engine.models, self.availability, log=self.routing_log)
 
+    def reload_engine(self) -> None:
+        """Modelle aus ``models.toml`` neu laden (z. B. nach der Ein-Klick-Einrichtung)."""
+        path = (
+            self.layout.models_config
+            if self.config.models_config is None
+            else self.config.models_config
+        )
+        if not path.is_file():
+            return
+        engine = InferenceEngine.from_toml(path)
+        old = self.engine
+        self.engine = engine
+        self.config.models_config = path
+        self.config.dev_mode = False
+        self.config.mode = "normal"
+        self.config_error = None
+        self.availability = ProviderAvailability(self.engine.providers, ttl_s=10.0)
+        self.router = self._build_router()
+        self.engine.router = self.router
+        self.agent_tasks.engine = self.engine
+        if self.hardware is not None:
+            self.engine.models.set_measurements(
+                ProfileStore(
+                    self.config.data_dir / "benchmarks",
+                    hardware_fingerprint=self.hardware.fingerprint,
+                    benchmark_version=suite_version(),
+                )
+            )
+        with contextlib.suppress(RuntimeError):
+            asyncio.get_running_loop().create_task(old.aclose())
+
+    async def _start_managed_runtime(self) -> None:
+        try:
+            if await asyncio.to_thread(self.runtime.start_runtime):
+                self.reload_engine()
+        except Exception as exc:  # Core bleibt nutzbar (Setup-Modus), Fehler im Status sichtbar
+            logger.warning("managed runtime failed to start: %s", exc)
+            self.runtime.progress = {"status": "failed", "error": str(exc)}
+
     async def startup(self) -> None:
         """Hardware erkennen und Benchmark-Profile anbinden (gemessene Werte im Router)."""
+        if self.runtime.state().get("model") and not self.runtime._custom_config():
+            # im Hintergrund: Modell laden dauert – der Core antwortet sofort (Setup-Status)
+            self._runtime_task = asyncio.create_task(self._start_managed_runtime())
         try:
             self.hardware = await detect_hardware()
             self.engine.models.set_measurements(
@@ -292,6 +340,7 @@ class NovaService:
         return EngineModel(self.engine) if status["any_available"] else None
 
     async def shutdown(self) -> None:
+        await asyncio.to_thread(self.runtime.stop)
         await self.research.shutdown()
         await self.agent_tasks.shutdown()
         self.integrations.close()

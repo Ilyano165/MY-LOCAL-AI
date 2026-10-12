@@ -8,6 +8,7 @@ Umgebung (``NOVA_API_TOKEN``).
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import re
@@ -25,6 +26,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from api.config import ApiConfig
 from api.conversations import NotFoundError
+from api.runtime import RuntimeError_
 from api.service import AttachmentIn, NovaService, ServiceError
 from api.v1 import create_routers
 from api.version import __version__
@@ -56,6 +58,11 @@ class AgentBody(BaseModel):
 
 class DownloadBody(BaseModel):
     id: str = Field(min_length=1, max_length=80)
+    accept_license: bool = False
+
+
+class RuntimeSetupBody(BaseModel):
+    choice: str | None = Field(default=None, max_length=80)
     accept_license: bool = False
 
 
@@ -178,6 +185,10 @@ def create_app(config: ApiConfig, *, service: NovaService | None = None) -> Fast
     async def service_error(_request: Request, exc: ServiceError) -> JSONResponse:
         return _error(exc.status, exc.code, exc.message, exc.detail)
 
+    @app.exception_handler(RuntimeError_)
+    async def runtime_error(_request: Request, exc: RuntimeError_) -> JSONResponse:
+        return _error(exc.status, exc.code, exc.message)
+
     @app.exception_handler(ResearchError)
     async def research_error(_request: Request, exc: ResearchError) -> JSONResponse:
         return _error(exc.status, exc.code, exc.message)
@@ -280,6 +291,22 @@ def create_app(config: ApiConfig, *, service: NovaService | None = None) -> Fast
     @app.get("/knowledge")
     async def knowledge_search(q: str = "", include_stale: bool = False) -> dict[str, Any]:
         return {"findings": svc.research.knowledge.search(q[:300], include_stale=include_stale)}
+
+    # ------------------------------------------------------------------ Runtime (Ein-Klick)
+
+    @app.get("/runtime/status")
+    async def runtime_status() -> dict[str, Any]:
+        return svc.runtime.status()
+
+    @app.post("/runtime/setup", status_code=202)
+    async def runtime_setup(body: RuntimeSetupBody) -> dict[str, Any]:
+        return await svc.runtime.setup(body.choice, body.accept_license, svc.reload_engine)
+
+    @app.post("/runtime/restart")
+    async def runtime_restart() -> dict[str, Any]:
+        await asyncio.to_thread(svc.runtime.stop)
+        await svc._start_managed_runtime()
+        return svc.runtime.status()
 
     @app.get("/models/catalog")
     async def model_catalog() -> dict[str, Any]:

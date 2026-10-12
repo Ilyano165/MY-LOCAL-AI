@@ -1,0 +1,39 @@
+{
+  "_comment": "Empfohlene Modelle für die Ein-Klick-Einrichtung. Download-Adresse, SHA-256, Größe und Lizenz werden zur Laufzeit über die Hugging-Face-API aufgelöst und geprüft – hier stehen keine Prüfsummen.",
+  "models": [
+    {
+      "id": "general-9b",
+      "label": "Qwen3.5 9B (Q4_K_M) – recommended for GPUs with 8 GB+ VRAM",
+      "repo": "unsloth/Qwen3.5-9B-GGUF",
+      "file_preference": ["Qwen3.5-9B-Q4_K_M.gguf", "-Q4_K_M.gguf", "-UD-Q4_K_XL.gguf"],
+      "registry_name": "qwen3.5-9b",
+      "parameter_count": "9B",
+      "context_length": 16384,
+      "min_vram_gb": 8,
+      "min_ram_gb": 16,
+      "base_license": "apache-2.0",
+      "reasoning_capability": "good",
+      "coding_capability": "good",
+      "tool_calling": true,
+      "speed": "medium",
+      "memory_requirement": 7.5
+    },
+    {
+      "id": "general-4b",
+      "label": "Qwen3.5 4B (Q4_K_M) – for smaller GPUs or CPU only",
+      "repo": "unsloth/Qwen3.5-4B-GGUF",
+      "file_preference": ["Qwen3.5-4B-Q4_K_M.gguf", "-Q4_K_M.gguf", "-UD-Q4_K_XL.gguf"],
+      "registry_name": "qwen3.5-4b",
+      "parameter_count": "4B",
+      "context_length": 16384,
+      "min_vram_gb": 0,
+      "min_ram_gb": 8,
+      "base_license": "apache-2.0",
+      "reasoning_capability": "basic",
+      "coding_capability": "basic",
+      "tool_calling": true,
+      "speed": "fast",
+      "memory_requirement": 4
+    }
+  ]
+}
