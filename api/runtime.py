@@ -332,11 +332,17 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def safe_extract(archive: Path, target: Path) -> None:
-    """Entpackt ohne Pfad-Ausbruch (keine absoluten Pfade, kein ``..``)."""
+def safe_extract(
+    archive: Path, target: Path, include: Callable[[PurePosixPath], bool] | None = None
+) -> None:
+    """Entpackt ohne Pfad-Ausbruch (keine absoluten Pfade, kein ``..``).
+
+    ``include`` wählt Einträge aus (z. B. nur den Konverter aus dem llama.cpp-Quellbaum –
+    vermeidet zu lange Windows-Pfade und unnötige Dateien)."""
     target.mkdir(parents=True, exist_ok=True)
     root = target.resolve()
     with zipfile.ZipFile(archive) as zf:
+        members = []
         for member in zf.infolist():
             name = PurePosixPath(member.filename)
             if name.is_absolute() or ".." in name.parts or ":" in member.filename:
@@ -344,9 +350,11 @@ def safe_extract(archive: Path, target: Path) -> None:
             dest = (root / Path(*name.parts)).resolve()
             if not str(dest).startswith(str(root)):
                 raise RuntimeError_("unsafe_archive", f"unsafe path in archive: {member.filename}")
-        zf.extractall(root)
+            if include is None or include(name):
+                members.append(member)
+        zf.extractall(root, members=members)
         if os.name != "nt":  # Ausführungsrechte aus dem Archiv übernehmen (POSIX)
-            for member in zf.infolist():
+            for member in members:
                 mode = (member.external_attr >> 16) & 0o777
                 if mode:
                     (root / Path(*PurePosixPath(member.filename).parts)).chmod(mode)

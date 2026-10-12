@@ -57,3 +57,31 @@ def test_approval_requires_gate_and_matching_base(make_client: Factory) -> None:
         jobs = client.get("/training/status").json()["jobs"]
         assert [j["id"] for j in jobs] == ["20261012-000000-bbbb", "20261012-000000-aaaa"]
         assert jobs[0]["report"]["gate"]["eligible"] is True and jobs[0]["approval"] is None
+
+
+def test_llama_source_extracts_only_the_converter(tmp_path: Path) -> None:
+    import zipfile
+
+    from api.runtime import safe_extract
+    from api.training_service import converter_files
+
+    archive = tmp_path / "src.zip"
+    with zipfile.ZipFile(archive, "w") as zf:
+        for name in (
+            "llama.cpp-b1/convert_lora_to_gguf.py",
+            "llama.cpp-b1/convert_hf_to_gguf.py",
+            "llama.cpp-b1/conversion/llama.py",
+            "llama.cpp-b1/gguf-py/gguf/gguf_writer.py",
+            "llama.cpp-b1/README.md",
+            "llama.cpp-b1/examples/" + "deep/" * 40 + "x.c",
+        ):
+            zf.writestr(name, "x")
+    safe_extract(archive, tmp_path / "out", converter_files)
+    got = sorted(p.relative_to(tmp_path / "out").as_posix() for p in tmp_path.rglob("*.py"))
+    assert got == [
+        "llama.cpp-b1/conversion/llama.py",
+        "llama.cpp-b1/convert_hf_to_gguf.py",
+        "llama.cpp-b1/convert_lora_to_gguf.py",
+        "llama.cpp-b1/gguf-py/gguf/gguf_writer.py",
+    ]
+    assert not (tmp_path / "out" / "llama.cpp-b1" / "examples").exists()

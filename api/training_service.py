@@ -81,6 +81,14 @@ def trainer_source() -> Path:
     )
 
 
+def converter_files(name: PurePosixPath) -> bool:
+    """Aus dem llama.cpp-Quellarchiv nur Konverter, ``conversion/`` und ``gguf-py/`` entpacken."""
+    parts = name.parts[1:]  # erste Ebene: llama.cpp-<tag>/
+    if len(parts) == 1:
+        return parts[0].startswith("convert_") and parts[0].endswith(".py")
+    return len(parts) > 1 and parts[0] in ("conversion", "gguf-py")
+
+
 def uv_asset_pattern(platform: str = sys.platform) -> re.Pattern[str]:
     if platform == "win32":
         return re.compile(r"^uv-x86_64-pc-windows-msvc\.zip$")
@@ -503,7 +511,7 @@ class TrainingManager:
                     digest.update(chunk)
         # GitHub-Quellarchive haben keine veröffentlichte Prüfsumme: Tag + HTTPS, Hash protokolliert
         self._log(f"llama.cpp source {tag}: sha256 {digest.hexdigest()}")
-        await asyncio.to_thread(safe_extract, archive, target)
+        await asyncio.to_thread(safe_extract, archive, target, converter_files)
         found = sorted(target.glob("*/convert_lora_to_gguf.py"))
         if not found:
             raise RuntimeError_("download_failed", "converter not found in llama.cpp sources", 502)
