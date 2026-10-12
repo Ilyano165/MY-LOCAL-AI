@@ -198,3 +198,29 @@ Veröffentlicht über `windows-release` (manueller Start mit `release=true`,
 <https://github.com/Ilyano165/MY-LOCAL-AI/releases/tag/v0.2.0>.
 
 `51ac1b1d0f2e89801343e77ab80246cd428bb650b0f0cb018ab0a0e2c8e3660b  NOVA-0.2.0-x64.msi`
+
+## 10. Release v0.2.1 – Ein-Klick-Einrichtung mit stabilen llama.cpp-Versionen
+
+**Fehler beim Nutzer:** „No llama.cpp cpu build found in release v0.6.0“.
+
+**Ursache:** llama.cpp veröffentlicht inzwischen stabile Versionen (`v0.x`, Workflow
+`make-release.yml`), und GitHub markiert sie als „latest“. Sie enthalten keine Programmdateien,
+nur `nightly-tag.txt`. Die Builds mit Programmdateien (`bNNNN`) sind als Vorabversion markiert.
+
+**Fix:**
+
+* NOVA folgt dem Zeiger `nightly-tag.txt`. Die Prüfsumme kommt aus der GitHub-API, der Tag muss
+  das Format `bNNNN` haben.
+* Fallback: der neueste Release mit passenden Windows-Archiven.
+* Getestet in `tests/runtime/` mit einer simulierten GitHub-API im neuen Format, auch mit
+  manipuliertem Zeiger.
+* Gegen die echte GitHub-API wurde der Fix **nicht** geprüft: llama.cpp ist von dieser
+  Umgebung aus nur per Git erreichbar. Die Asset-Namen stammen aus dem Workflow
+  `release-publish.yml` auf `master`.
+
+Zusätzlich gibt es Qwen3.5 2B für Rechner mit weniger als 7 GB RAM.
+
+[Lauf](https://github.com/Ilyano165/MY-LOCAL-AI/actions/runs/38242372249), Installationstest 20/20:
+<https://github.com/Ilyano165/MY-LOCAL-AI/releases/tag/v0.2.1>
+
+`9fe4f8fb76f4710c95fc9a8093881b606beaa4cdbaae3d0cbe7ca5007e765e27  NOVA-0.2.1-x64.msi`
