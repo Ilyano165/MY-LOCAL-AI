@@ -314,3 +314,7 @@ code, pre { font-family: var(--mono); }
 .setup-warning { color: var(--warn); font-size: 12.5px; margin-top: 4px; }
 .progress { width: 100%; height: 6px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
 .progress-bar { height: 100%; width: var(--pct, 0%); background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .4s var(--ease); }
+
+.thinking { margin: 6px 0 10px; border-left: 2px solid var(--line-2); padding-left: 10px; color: var(--muted); font-size: 13px; }
+.thinking summary { cursor: pointer; user-select: none; }
+.thinking-text { white-space: pre-wrap; max-height: 260px; overflow-y: auto; margin-top: 6px; }

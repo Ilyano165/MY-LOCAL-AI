@@ -42,3 +42,14 @@ test("job: progress, report, gate, approve, active", () => {
   assert.match(renderJob(approved, "nova-general-9b-20261012-120000"), /active NOVA model/);
   assert.match(renderJob(approved, null), /approved 2026-10-12/);
 });
+
+test("no suitable GPU: honest explanation, no pointless download, no start form", () => {
+  const hardware = { trainable: false, gpu: null, reason: "This PC has no NVIDIA GPU <x>." };
+  const html = renderEnv({ ready: false, setup: { status: "idle" } }, hardware);
+  assert.match(html, /no NVIDIA GPU &lt;x&gt;/);
+  assert.doesNotMatch(html, /training-setup/);
+  const installed = renderEnv({ ready: true, setup: {}, probe: { ...probe, ready: false, gpu: null, problems: ["CUDA is not available"] } }, hardware);
+  assert.match(installed, /no NVIDIA GPU/);
+  assert.match(renderStart({ hardware, env: { ready: true }, datasets: [{}] }), /Not available on this PC/);
+  assert.match(renderEnv({ ready: false, setup: { status: "idle" } }, { trainable: true }), /id="training-setup"/);
+});

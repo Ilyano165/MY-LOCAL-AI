@@ -235,6 +235,7 @@ class NovaService:
             layout, self.runtime, RECOMMENDED_MODELS, on_runtime_change=self.reload_engine
         )
         self.settings_store = SettingsStore(data / "ui_settings.json")
+        self.engine.thinking_default = self.settings().thinking
         self.uploads = data / "uploads"
         self.runs: dict[str, Run] = {}
         self.started = time.time()
@@ -283,6 +284,7 @@ class NovaService:
             return
         engine = InferenceEngine.from_toml(path)
         old = self.engine
+        engine.thinking_default = self.settings().thinking
         self.engine = engine
         self.config.models_config = path
         self.config.dev_mode = False
@@ -388,6 +390,7 @@ class NovaService:
         if updated.model != "auto" and updated.model not in self.engine.models:
             raise ServiceError("invalid_settings", f"Unknown model: {updated.model}")
         self.settings_store.save(updated)
+        self.engine.thinking_default = updated.thinking
         return updated
 
     # ------------------------------------------------------------------ Status
@@ -801,6 +804,7 @@ class NovaService:
             "user_message": user.to_dict(),
         }
         content: list[str] = []
+        thinking: list[str] = []
         meta: dict[str, Any] = {}
         finished = False
         started = time.perf_counter()
@@ -822,7 +826,9 @@ class NovaService:
             request = ChatRequest(
                 tuple(messages),
                 params=GenerationParams(
-                    temperature=settings.temperature, max_tokens=settings.max_tokens
+                    temperature=settings.temperature,
+                    max_tokens=settings.max_tokens,
+                    thinking=settings.thinking,
                 ),
                 timeout_s=settings.request_timeout_s,
             )
@@ -841,11 +847,16 @@ class NovaService:
                 elif kind == "token":
                     content.append(event["delta"])
                     yield event
+                elif kind == "thinking":
+                    thinking.append(event["delta"])
+                    yield event
                 elif kind == "model":
                     yield event
                 elif kind == "complete":
                     meta.update(event["stats"])
             finished = True
+            if thinking:
+                meta["thinking"] = "".join(thinking)[-20_000:]
             if refs:
                 meta["knowledge"] = retrieval.mark_cited("".join(content), refs)
             # Kein record_outcome: Ein Chat ohne Verifikation hat kein Erfolgsurteil – es
@@ -854,10 +865,14 @@ class NovaService:
             yield {"event": "done", "message": message.to_dict()}
         except _Stopped:
             finished = True
+            if thinking:
+                meta["thinking"] = "".join(thinking)[-20_000:]
             message = self._store_partial(cid, content, meta, started, "stopped")
             yield {"event": "stopped", "message": message.to_dict()}
         except _Timeout:
             finished = True
+            if thinking:
+                meta["thinking"] = "".join(thinking)[-20_000:]
             message = self._store_partial(cid, content, meta, started, "timeout")
             limit = settings.request_timeout_s
             yield {
@@ -954,6 +969,8 @@ class NovaService:
                     if used is not None or chosen.name != candidates[0].name:
                         yield {"event": "model", "model": chosen.name, "fallback": True}
                     used = chosen
+                if chunk.reasoning:
+                    yield {"event": "thinking", "delta": chunk.reasoning}
                 if chunk.delta:
                     if first_at is None:
                         first_at = time.perf_counter()

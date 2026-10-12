@@ -27,8 +27,12 @@ class SSERuntime:
         usage: bool = True,
         fail: bool = False,
         models: list[str] | None = None,
+        thinking: str = "",
     ) -> None:
         self.reply = reply
+        self.thinking = thinking
+        """Wie ein Reasoning-Modell im llama-server: Denkphase als ``reasoning_content``,
+        außer die Anfrage schaltet sie per ``chat_template_kwargs`` ab."""
         self.usage = usage
         self.fail = fail
         self.models = models or ["test-model"]
@@ -59,6 +63,14 @@ class SSERuntime:
                 },
             )
         lines = []
+        kwargs = payload.get("chat_template_kwargs") or {}
+        if self.thinking and kwargs.get("enable_thinking", True):
+            for word in self.thinking.split(" "):
+                chunk = {
+                    "model": payload["model"],
+                    "choices": [{"delta": {"reasoning_content": word + " "}}],
+                }
+                lines.append(f"data: {json.dumps(chunk)}\n\n")
         for i, tok in enumerate(tokens):
             chunk = {
                 "model": payload["model"],

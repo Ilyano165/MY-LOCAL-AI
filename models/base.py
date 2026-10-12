@@ -124,6 +124,8 @@ class GenerationParams:
     top_p: float | None = None
     stop: tuple[str, ...] = ()
     seed: int | None = None
+    thinking: bool | None = None
+    """Denkphase von Reasoning-Modellen: ``None`` = Vorgabe des Chat-Templates."""
 
     def __post_init__(self) -> None:
         if not 0.0 <= self.temperature <= 2.0:
@@ -189,6 +191,8 @@ class StreamChunk:
     """
 
     delta: str = ""
+    reasoning: str = ""
+    """Text der Denkphase (``reasoning_content``) – getrennt von der eigentlichen Antwort."""
     finish_reason: FinishReason | None = None
     usage: TokenUsage | None = None
     runtime_stats: Mapping[str, float] = field(default_factory=dict, hash=False)

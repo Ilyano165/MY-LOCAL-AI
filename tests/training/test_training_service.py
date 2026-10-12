@@ -85,3 +85,24 @@ def test_llama_source_extracts_only_the_converter(tmp_path: Path) -> None:
         "llama.cpp-b1/gguf-py/gguf/gguf_writer.py",
     ]
     assert not (tmp_path / "out" / "llama.cpp-b1" / "examples").exists()
+
+
+def test_training_needs_a_suitable_gpu(make_client: Factory) -> None:
+    from api.runtime import GpuInfo
+
+    client, service = make_client()
+    with client:
+        service.runtime.gpu_detector = lambda: None
+        service.runtime._gpu_checked = False
+        hardware = client.get("/training/status").json()["hardware"]
+        assert hardware["trainable"] is False and "no NVIDIA GPU" in hardware["reason"]
+        r = client.post("/training/env/setup")
+        assert r.status_code == 409 and "no NVIDIA GPU" in r.text
+        service.runtime.gpu_detector = lambda: GpuInfo("GT 1030", 2.0, "6.1", "580")
+        service.runtime._gpu_checked = False
+        hardware = client.get("/training/status").json()["hardware"]
+        assert hardware["trainable"] is False and "2 GB VRAM" in hardware["reason"]
+        service.runtime.gpu_detector = lambda: GpuInfo("GTX 1080 Ti", 11.0, "6.1", "580")
+        service.runtime._gpu_checked = False
+        hardware = client.get("/training/status").json()["hardware"]
+        assert hardware == {"gpu": {"name": "GTX 1080 Ti", "vram_gb": 11.0}, "trainable": True}

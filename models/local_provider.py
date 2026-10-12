@@ -172,7 +172,11 @@ class OpenAICompatibleProvider(ModelProvider):
                             finish = FinishReason(str(reason))
                         except ValueError:
                             finish = FinishReason.OTHER
-                    delta = (choice.get("delta") or {}).get("content")
+                    raw = choice.get("delta") or {}
+                    thought = raw.get("reasoning_content") or raw.get("reasoning")
+                    if thought:
+                        yield StreamChunk(reasoning=str(thought), model=served)
+                    delta = raw.get("content")
                     if delta:
                         yield StreamChunk(delta=str(delta), model=served)
         except httpx.TimeoutException as exc:
@@ -476,6 +480,9 @@ class OpenAICompatibleProvider(ModelProvider):
             payload["seed"] = params.seed
         if request.tools:
             payload["tools"] = [self._serialize_tool(t) for t in request.tools]
+        if params.thinking is not None:
+            # llama-server (Jinja-Templates): Denkphase ein/aus; andere Runtimes ignorieren das Feld
+            payload["chat_template_kwargs"] = {"enable_thinking": params.thinking}
         return payload
 
     def _parse_chat(

@@ -224,3 +224,40 @@ Zusätzlich gibt es Qwen3.5 2B für Rechner mit weniger als 7 GB RAM.
 <https://github.com/Ilyano165/MY-LOCAL-AI/releases/tag/v0.2.1>
 
 `9fe4f8fb76f4710c95fc9a8093881b606beaa4cdbaae3d0cbe7ca5007e765e27  NOVA-0.2.1-x64.msi`
+
+## 11. v0.2.2 – Denkphase und Training ohne GPU
+
+**Rückmeldung des Nutzers** (Laptop: 7,8 GB RAM, keine NVIDIA-GPU, Qwen3.5 4B auf der CPU):
+
+* „hallo“ lief 58 s ohne sichtbaren Text, dann wurde abgebrochen.
+* Der Training-Bereich zeigte „CUDA is not available“.
+* Beim Hardware-Check ging ein leeres Konsolenfenster auf.
+
+**Ursachen:**
+
+* Qwen3.5 denkt standardmäßig vor der Antwort. `llama-server` liefert diesen Text als
+  `reasoning_content`, und NOVA las nur `content`. Die Denkphase war also unsichtbar und auf
+  der CPU minutenlang. Mit knappem `max_tokens` (Research, Planer) hätte sie das Budget
+  aufgebraucht, und die Antwort wäre leer geblieben.
+* Hilfsprozesse (Probe, uv, nvidia-smi) liefen ohne `CREATE_NO_WINDOW`.
+* Ohne NVIDIA-GPU gab es keine verständliche Erklärung.
+
+**Fix:**
+
+* Denkphase standardmäßig aus, per `chat_template_kwargs.enable_thinking` (llama-server-README,
+  `master`). Sie ist in den Settings einschaltbar und gilt zentral für alle Anfragen (Chat,
+  Agent, Research).
+* Ist sie an, wird `reasoning_content` live gestreamt und mit der Antwort gespeichert.
+* Kein Konsolenfenster mehr.
+* Training ohne GPU mit mindestens 6 GB VRAM wird erklärt statt angeboten. Ein Start auf
+  der CPU wird mit Begründung abgelehnt.
+
+**Tests:**
+
+* Suite 996 bestanden.
+* Neu: die simulierte Runtime verhält sich wie ein denkendes Modell (Chat aus/an,
+  Engine-Vorgabe); GPU-Prüfung; UI-Units; Browser-E2E.
+* Lernzyklus mit echtem PyTorch erneut bestanden.
+
+**Nicht geprüft:** ob der echte `llama-server` mit Qwen3.5 `enable_thinking: false` umsetzt
+(laut README unterstützt). Die Antwortzeit auf dem Laptop des Nutzers ist nicht gemessen.

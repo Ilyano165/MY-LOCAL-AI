@@ -368,3 +368,37 @@ def test_agent_run_reports_real_verification(make_client: Factory, tmp_path: Pat
     assert meta["verification"]["status"] == "unverified"  # ehrlich: nichts prüfbar
     assert meta["verification"]["verified"] is False
     assert events[-1]["message"]["content"]
+
+
+def test_thinking_off_by_default_and_shown_when_enabled(make_client: Factory) -> None:
+    runtime = SSERuntime("Hallo!", thinking="The user greets me in German.")
+    client, _service = make_client(engine_with(("test-model", runtime)))
+    # Standard: Denkphase aus → schnelle Antwort, nichts Verborgenes
+    events = sse_events(client.post("/chat/stream", json={"message": "hallo"}).text)
+    assert runtime.payloads[-1]["chat_template_kwargs"] == {"enable_thinking": False}
+    assert not [e for e in events if e["event"] == "thinking"]
+    assert "thinking" not in events[-1]["message"]["meta"]
+    # Eingeschaltet: Gedanken werden live gestreamt und mit der Antwort gespeichert
+    assert client.put("/settings", json={"thinking": True}).json()["thinking"] is True
+    events = sse_events(client.post("/chat/stream", json={"message": "hallo"}).text)
+    assert runtime.payloads[-1]["chat_template_kwargs"] == {"enable_thinking": True}
+    thought = "".join(e["delta"] for e in events if e["event"] == "thinking")
+    assert thought.strip() == "The user greets me in German."
+    message = events[-1]["message"]
+    assert message["content"] == "Hallo!" and message["meta"]["thinking"] == thought
+
+
+async def test_engine_default_applies_to_requests_without_own_choice() -> None:
+    from models.base import ChatRequest, GenerationParams, Message
+
+    runtime = SSERuntime("ok")
+    engine = engine_with(("test-model", runtime))
+    engine.thinking_default = False
+    await engine.chat(ChatRequest((Message.user("x"),)), model="test-model")
+    assert runtime.payloads[-1]["chat_template_kwargs"] == {"enable_thinking": False}
+    explicit = ChatRequest((Message.user("x"),), params=GenerationParams(thinking=True))
+    await engine.chat(explicit, model="test-model")
+    assert runtime.payloads[-1]["chat_template_kwargs"] == {"enable_thinking": True}
+    engine.thinking_default = None
+    await engine.chat(ChatRequest((Message.user("x"),)), model="test-model")
+    assert "chat_template_kwargs" not in runtime.payloads[-1]

@@ -11,7 +11,7 @@ import asyncio
 import logging
 import tomllib
 from collections.abc import AsyncIterator, Callable, Iterable, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -152,6 +152,15 @@ class InferenceEngine:
         self.providers = providers
         self.default_timeout_s = default_timeout_s
         self.router = router
+        self.thinking_default: bool | None = None
+        """Denkphase für Anfragen, die sie nicht selbst festlegen (``None`` = Template-Vorgabe).
+        Wichtig für Reasoning-Modelle: Mit knappem ``max_tokens`` verbraucht sonst die
+        Denkphase das Budget und die Antwort bleibt leer."""
+
+    def _prepared(self, request: ChatRequest) -> ChatRequest:
+        if request.params.thinking is not None or self.thinking_default is None:
+            return request
+        return replace(request, params=replace(request.params, thinking=self.thinking_default))
 
     def validate(self) -> list[str]:
         """Konsistenzprüfung: verweist jedes Modell auf einen registrierten Provider?"""
@@ -179,6 +188,7 @@ class InferenceEngine:
         """Führt eine Anfrage auf genau diesem Modell aus – mit hartem Timeout."""
         provider = self.providers.get(model.provider)
         timeout = request.timeout_s or self.default_timeout_s
+        request = self._prepared(request)
         try:
             return await asyncio.wait_for(provider.chat(model, request), timeout=timeout)
         except TimeoutError as exc:
@@ -261,6 +271,7 @@ class InferenceEngine:
         if not candidates:
             raise NoSuitableModelError("Keine Modelle zum Streamen angegeben")
         timeout = request.timeout_s or self.default_timeout_s
+        request = self._prepared(request)
         errors: list[str] = []
         for candidate in candidates:
             provider = self.providers.get(candidate.provider)

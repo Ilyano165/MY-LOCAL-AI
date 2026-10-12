@@ -11,13 +11,15 @@ function pct(done, total) {
   return total ? Math.floor((done / total) * 100) : 0;
 }
 
-export function renderEnv(env) {
+export function renderEnv(env, hardware) {
   const setup = env.setup || {};
   const probe = env.probe;
+  const blocked = hardware && !hardware.trainable ? `<div class="setup-warning">${escapeHtml(hardware.reason || "This PC cannot train models.")}</div>` : "";
+  if (blocked && !env.ready) return blocked;
   if (["starting", "installing"].includes(setup.status)) {
     return `<p>Setting up the training environment… <b>${escapeHtml(setup.step || "")}</b></p><p class="muted">This downloads Python, PyTorch and the training libraries (several GB) into NOVA's data folder.</p>`;
   }
-  let html = setup.status === "failed" ? `<div class="setup-problem">${escapeHtml(setup.error || "Setup failed")}</div>` : "";
+  let html = blocked + (setup.status === "failed" ? `<div class="setup-problem">${escapeHtml(setup.error || "Setup failed")}</div>` : "");
   if (!env.ready) {
     return `${html}<p class="muted">Training runs in a separate environment (Python, PyTorch with CUDA 12.6, transformers, PEFT). NOVA installs it from the official sources.</p><button class="primary-btn" id="training-setup">Set up training environment</button>`;
   }
@@ -38,6 +40,7 @@ export function renderDatasets(datasets) {
 }
 
 export function renderStart(status) {
+  if (status.hardware && !status.hardware.trainable) return `<p class="muted">Not available on this PC (see step 1).</p>`;
   if (!status.env.ready || !status.datasets.length) return `<p class="muted">Needs a ready training environment and a dataset.</p>`;
   const datasets = status.datasets.map((d) => `<option value="${escapeHtml(`${d.name}@${d.version}`)}">${escapeHtml(`${d.name}@${d.version}`)}</option>`).join("");
   const choices = status.choices

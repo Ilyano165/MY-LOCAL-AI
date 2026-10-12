@@ -67,6 +67,13 @@ class GpuInfo:
     driver: str | None
 
 
+def no_window() -> dict[str, Any]:
+    """Unter Windows kein Konsolenfenster für Hilfsprozesse (nvidia-smi, Python, uv)."""
+    if sys.platform == "win32":
+        return {"creationflags": subprocess.CREATE_NO_WINDOW}
+    return {}
+
+
 def detect_gpu(run: Callable[..., Any] = subprocess.run) -> GpuInfo | None:
     exe = shutil.which("nvidia-smi")
     if exe is None:
@@ -82,6 +89,7 @@ def detect_gpu(run: Callable[..., Any] = subprocess.run) -> GpuInfo | None:
             text=True,
             timeout=10,
             check=False,
+            **no_window(),
         )
     except (OSError, subprocess.SubprocessError):
         return None

@@ -119,7 +119,15 @@ ohne NOVA-Markierung wird nie überschrieben.
 GGUF-Dateien über `model-catalog.json` mit `nova models download <id> --accept-license`
 geladen werden (Aufklappbereich „Advanced“ im Setup).
 
+**Denkphase:** Qwen3.5 „denkt“ standardmäßig vor jeder Antwort. Auf der CPU dauert das
+Minuten. NOVA schaltet die Denkphase deshalb ab. Unter Settings → „Let the model think before
+answering“ lässt sie sich einschalten; die Gedanken erscheinen dann live als aufklappbarer
+Block über der Antwort.
+
 ## 4a. Eigenes NOVA-Modell trainieren
+
+Training braucht eine **NVIDIA-Grafikkarte mit mindestens 6 GB VRAM**. Auf PCs ohne passende
+Karte erklärt der Training-Bereich das und bietet keine Einrichtung an.
 
 Im Seitenmenü auf **Training** (Doktorhut-Symbol) klicken:
 

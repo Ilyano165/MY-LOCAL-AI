@@ -38,6 +38,7 @@ from api.runtime import (
     RuntimeError_,
     RuntimeManager,
     fetch_verified,
+    no_window,
     recommended_models,
     safe_extract,
 )
@@ -66,6 +67,7 @@ TRAIN_PACKAGES = [
     "tqdm",
     "requests",
 ]
+MIN_TRAIN_VRAM_GB = 6.0
 SCRIPTS = ("runner.py", "evaluate.py", "export.py", "probe.py")
 _JOB_ID = re.compile(r"^[a-z0-9][a-z0-9-]{2,63}$")
 
@@ -172,7 +174,7 @@ class TrainingManager:
     def _run(self, args: list[str], step: str) -> None:
         self.setup_progress.update({"status": "installing", "step": step})
         self._log(f"$ {' '.join(args)}")
-        result = subprocess.run(args, capture_output=True, text=True, check=False)
+        result = subprocess.run(args, capture_output=True, text=True, check=False, **no_window())
         self._log(result.stdout[-4000:] + result.stderr[-4000:])
         if result.returncode != 0:
             raise RuntimeError_(
@@ -187,9 +189,34 @@ class TrainingManager:
         for name in SCRIPTS:
             shutil.copy2(source / name, self.trainer_dir / name)
 
+    def hardware(self) -> dict[str, Any]:
+        """Kann dieser PC trainieren? Ehrliche Antwort vor mehreren GB Download."""
+        gpu = self.runtime.gpu()
+        info: dict[str, Any] = {"gpu": None, "trainable": False}
+        if gpu is None:
+            info["reason"] = (
+                "This PC has no NVIDIA GPU. Training a language model needs an NVIDIA GPU with "
+                f"at least {MIN_TRAIN_VRAM_GB:g} GB VRAM (for example a GTX 1080 Ti) – on the CPU "
+                "it would take days and run out of memory. Chat and research work normally here; "
+                "train on a PC with a suitable GPU."
+            )
+            return info
+        info["gpu"] = {"name": gpu.name, "vram_gb": gpu.vram_gb}
+        if gpu.vram_gb < MIN_TRAIN_VRAM_GB:
+            info["reason"] = (
+                f"{gpu.name} has {gpu.vram_gb:g} GB VRAM; training needs at least "
+                f"{MIN_TRAIN_VRAM_GB:g} GB."
+            )
+            return info
+        info["trainable"] = True
+        return info
+
     async def setup_env(self) -> dict[str, Any]:
         if self._setup_task is not None and not self._setup_task.done():
             raise RuntimeError_("already_running", "Training setup is already running", 409)
+        hardware = self.hardware()
+        if not hardware["trainable"] and not os.environ.get("NOVA_TRAIN_ALLOW_CPU"):
+            raise RuntimeError_("no_training_gpu", hardware["reason"], 409)
         self.setup_progress = {"status": "starting", "error": None}
         self._setup_task = asyncio.create_task(self._setup())
         return self.setup_progress
@@ -272,6 +299,7 @@ class TrainingManager:
             text=True,
             check=False,
             cwd=str(self.trainer_dir),
+            **no_window(),
         )
         try:
             data: dict[str, Any] = json.loads(result.stdout)
@@ -349,6 +377,14 @@ class TrainingManager:
         if not self.env_status()["ready"]:
             raise RuntimeError_("env_not_ready", "Set up the training environment first", 409)
         probe = self.probe_result()
+        if not local_model_dir and not (probe or {}).get("cuda_available"):
+            raise RuntimeError_(
+                "no_training_gpu",
+                self.hardware().get("reason")
+                or "PyTorch cannot use the GPU (see the hardware check) – training on the CPU "
+                "is not offered for real models.",
+                409,
+            )
         spec = next((m for m in self.choices() if m["id"] == choice), None)
         if spec is None:
             raise RuntimeError_("invalid_request", f"Unknown base model choice {choice!r}")
@@ -573,6 +609,7 @@ class TrainingManager:
         except DatasetError:
             datasets = []
         return {
+            "hardware": self.hardware(),
             "env": self.env_status(),
             "choices": [
                 {"id": c["id"], "label": c["label"], "repo": c["training_base"]["repo"]}

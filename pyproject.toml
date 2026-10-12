@@ -1,6 +1,6 @@
 [project]
 name = "nova"
-version = "0.2.1"
+version = "0.2.2"
 description = "NOVA – vollständig lokale, persönliche KI-Plattform"
 readme = "README.md"
 requires-python = ">=3.12"

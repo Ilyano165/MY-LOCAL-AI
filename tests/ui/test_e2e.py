@@ -384,15 +384,17 @@ def test_chat_shows_research_sources(page: object, servers: dict[str, str]) -> N
 
 
 def test_training_drawer_shows_environment_and_steps(page: object, servers: dict[str, str]) -> None:
-    """Training-Bereich: ohne Trainingsumgebung wird die Einrichtung angeboten, Start gesperrt."""
+    """Training-Bereich ohne geeignete GPU: Erklärung, keine Einrichtung, Start gesperrt."""
     expect = playwright_api.expect
     page.goto(servers["dev"])  # type: ignore[attr-defined]
     page.click("#open-training")  # type: ignore[attr-defined]
     drawer = page.locator("#training-drawer")  # type: ignore[attr-defined]
     expect(drawer).to_be_visible()
-    expect(drawer.locator("#training-setup")).to_be_visible()
+    # Testrechner ohne NVIDIA-GPU: ehrliche Erklärung statt sinnloser Einrichtung
+    expect(drawer).to_contain_text("no NVIDIA GPU")
+    expect(drawer.locator("#training-setup")).to_have_count(0)
     expect(drawer).to_contain_text("Build dataset from research knowledge")
-    expect(drawer).to_contain_text("Needs a ready training environment")
+    expect(drawer).to_contain_text("Not available on this PC")
     expect(drawer).to_contain_text("No training runs yet")
     page.click("#open-research")  # type: ignore[attr-defined]
     expect(drawer).to_be_hidden()

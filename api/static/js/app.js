@@ -227,9 +227,15 @@ function userNode(message) {
   return node;
 }
 
+function thinkingHtml(text, open) {
+  const tail = text.length > 4000 ? `…${text.slice(-4000)}` : text;
+  return `<details class="thinking"${open ? " open" : ""}><summary>${open ? "Thinking…" : "Thought process"}</summary><div class="thinking-text">${escapeHtml(tail)}</div></details>`;
+}
+
 function assistantBody(message) {
   const meta = message.meta || {};
   let html = "";
+  if (meta.thinking) html += thinkingHtml(meta.thinking, false);
   if (meta.error) {
     const detail = typeof meta.error.detail === "string" ? meta.error.detail : meta.error.detail ? JSON.stringify(meta.error.detail, null, 2) : "";
     html += `<div class="error-card"><div class="err-title">${escapeHtml(meta.error.message)}</div>${
@@ -267,7 +273,8 @@ function liveHtml(run) {
     .map((p) => (p.label === "Status" ? `<span><span class="pulse"></span>${p.label}: <b>${escapeHtml(p.value)}</b></span>` : `<span>${p.label}: <b>${escapeHtml(p.value)}</b></span>`))
     .join("");
   const text = run.state.text;
-  return `<div class="live">${parts}</div>${text ? `<div class="md caret">${renderMarkdown(text)}</div>` : ""}`;
+  const thought = run.state.thinking ? thinkingHtml(run.state.thinking, !text) : "";
+  return `<div class="live">${parts}</div>${thought}${text ? `<div class="md caret">${renderMarkdown(text)}</div>` : ""}`;
 }
 
 let renderScheduled = false;
@@ -386,6 +393,10 @@ function onEvent(name, data, userEl, done) {
       break;
     case "phase":
       run.state.status = `${data.phase}: ${data.message}`.slice(0, 120);
+      break;
+    case "thinking":
+      run.state.thinking = (run.state.thinking || "") + data.delta;
+      run.state.status = "Thinking…";
       break;
     case "token":
       run.state.text += data.delta;
@@ -649,7 +660,7 @@ async function renderTraining() {
   const active = status.active_adapter ? `<p>Active NOVA model: <b>${escapeHtml(status.active_adapter)}</b></p>` : "";
   if (!keepForm) {
     body.innerHTML = [
-      setupStep(1, "Training environment", renderEnv(status.env)),
+      setupStep(1, "Training environment", renderEnv(status.env, status.hardware)),
       setupStep(2, "Datasets", renderDatasets(status.datasets)),
       setupStep(3, "New training", renderStart(status)),
       `<div class="panel"><h3>Runs</h3>${active}<div id="training-jobs">${jobs}</div></div>`,
@@ -835,6 +846,7 @@ async function saveSettings(event) {
     agent_workspace: form.agent_workspace.value.trim(),
     show_routing: form.show_routing.checked,
     use_knowledge: form.use_knowledge.checked,
+    thinking: form.thinking.checked,
   };
   try {
     state.settings = await api.saveSettings(data);

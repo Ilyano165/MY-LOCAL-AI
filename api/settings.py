@@ -23,6 +23,9 @@ class Settings:
     show_routing: bool = True
     use_knowledge: bool = True
     """Erkenntnisse aus NOVA-Research (Knowledge Store) im Chat mit Quellen nutzen."""
+    thinking: bool = False
+    """Denkphase von Reasoning-Modellen. Aus: schnelle Antworten (wichtig auf CPU/schwacher
+    Hardware); an: gründlicher, die Gedanken werden live angezeigt."""
 
     def validate(self) -> None:
         if not 0.0 <= self.temperature <= 2.0:
@@ -55,6 +58,7 @@ class Settings:
                 agent_workspace=str(data["agent_workspace"]),
                 show_routing=bool(data["show_routing"]),
                 use_knowledge=bool(data["use_knowledge"]),
+                thinking=bool(data["thinking"]),
             )
         except (TypeError, ValueError) as exc:
             raise ValueError(f"Invalid value: {exc}") from exc
