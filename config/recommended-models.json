@@ -5,7 +5,11 @@
       "id": "general-9b",
       "label": "Qwen3.5 9B (Q4_K_M) – recommended for GPUs with 8 GB+ VRAM",
       "repo": "unsloth/Qwen3.5-9B-GGUF",
-      "file_preference": ["Qwen3.5-9B-Q4_K_M.gguf", "-Q4_K_M.gguf", "-UD-Q4_K_XL.gguf"],
+      "file_preference": [
+        "Qwen3.5-9B-Q4_K_M.gguf",
+        "-Q4_K_M.gguf",
+        "-UD-Q4_K_XL.gguf"
+      ],
       "registry_name": "qwen3.5-9b",
       "parameter_count": "9B",
       "context_length": 16384,
@@ -16,13 +20,21 @@
       "coding_capability": "good",
       "tool_calling": true,
       "speed": "medium",
-      "memory_requirement": 7.5
+      "memory_requirement": 7.5,
+      "training_base": {
+        "repo": "Qwen/Qwen3.5-9B",
+        "params_b": 9
+      }
     },
     {
       "id": "general-4b",
       "label": "Qwen3.5 4B (Q4_K_M) – for smaller GPUs or CPU only",
       "repo": "unsloth/Qwen3.5-4B-GGUF",
-      "file_preference": ["Qwen3.5-4B-Q4_K_M.gguf", "-Q4_K_M.gguf", "-UD-Q4_K_XL.gguf"],
+      "file_preference": [
+        "Qwen3.5-4B-Q4_K_M.gguf",
+        "-Q4_K_M.gguf",
+        "-UD-Q4_K_XL.gguf"
+      ],
       "registry_name": "qwen3.5-4b",
       "parameter_count": "4B",
       "context_length": 16384,
@@ -33,7 +45,11 @@
       "coding_capability": "basic",
       "tool_calling": true,
       "speed": "fast",
-      "memory_requirement": 4
+      "memory_requirement": 4,
+      "training_base": {
+        "repo": "Qwen/Qwen3.5-4B",
+        "params_b": 4
+      }
     }
   ]
 }

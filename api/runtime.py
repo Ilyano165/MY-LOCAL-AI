@@ -374,12 +374,23 @@ def free_port(preferred: int = 8080) -> int:
     raise RuntimeError_("no_port", "no free local port")
 
 
+def served_name(model: dict[str, Any]) -> str:
+    """Name des laufenden Modells: Basisname oder – mit aktivem NOVA-Adapter – dessen Name."""
+    return str(model.get("active_name") or model["settings"]["registry_name"])
+
+
 def models_toml(model: dict[str, Any], port: int) -> str:
     s = model["settings"]
+    name = served_name(model)
+    adapter = (
+        f"# NOVA checkpoint active: {name} (LoRA on {s['registry_name']})\n"
+        if model.get("lora")
+        else ""
+    )
     return f"""{MANAGED_MARKER}
 # Runtime: llama.cpp ({model.get("runtime_tag", "")})
 # Model: {model["repo"]}@{model["revision"][:12]} ({model["file"]})
-
+{adapter}
 [inference]
 default_timeout_s = 300
 
@@ -391,8 +402,8 @@ health_path = "/health"
 timeout_s = 300
 
 [[models]]
-name = "{s["registry_name"]}"
-served_name = "{s["registry_name"]}"
+name = "{name}"
+served_name = "{name}"
 provider = "nova-llamacpp"
 parameter_count = "{s.get("parameter_count", "")}"
 context_length = {int(s.get("context_length", 8192))}
@@ -430,7 +441,7 @@ class RuntimeProcess:
             "-m",
             str(model["path"]),
             "--alias",
-            str(s["registry_name"]),
+            served_name(model),
             "--host",
             "127.0.0.1",
             "--port",
@@ -696,11 +707,13 @@ class RuntimeManager:
             self.layout.models_config.write_text(models_toml(model, port), encoding="utf-8")
         return True
 
-    def set_lora(self, adapters: list[str]) -> None:
+    def set_lora(self, adapters: list[str], active_name: str | None = None) -> None:
+        """Aktiviert (oder mit leerer Liste: deaktiviert) einen freigegebenen NOVA-Adapter."""
         state = self.state()
         if not state.get("model"):
             raise RuntimeError_("not_installed", "No managed runtime installed")
         state["model"]["lora"] = adapters
+        state["model"]["active_name"] = active_name if adapters else None
         self._save(state)
 
     def stop(self) -> None:

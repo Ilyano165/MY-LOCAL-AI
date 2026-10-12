@@ -37,6 +37,7 @@ from api.model_manager import CatalogError, ModelManager
 from api.paths import DataLayout
 from api.runtime import RuntimeManager
 from api.settings import Settings, SettingsStore
+from api.training_service import TrainingManager
 from api.version import __version__
 from evaluation.benchmark_results import ProfileStore
 from evaluation.benchmark_tasks import suite_version
@@ -63,6 +64,7 @@ from router.routing_log import JsonlRoutingLog, RoutingLog
 from router.rule_router import RuleBasedRouter
 from tools import default_tools
 from tools.registry import ToolRegistry
+from training.dataset import DatasetError, from_findings
 
 logger = logging.getLogger(__name__)
 
@@ -229,6 +231,9 @@ class NovaService:
         )
         self.runtime = RuntimeManager(layout, RECOMMENDED_MODELS)
         self._runtime_task: asyncio.Task[None] | None = None
+        self.training = TrainingManager(
+            layout, self.runtime, RECOMMENDED_MODELS, on_runtime_change=self.reload_engine
+        )
         self.settings_store = SettingsStore(data / "ui_settings.json")
         self.uploads = data / "uploads"
         self.runs: dict[str, Run] = {}
@@ -339,7 +344,25 @@ class NovaService:
         status = await self.models_status()
         return EngineModel(self.engine) if status["any_available"] else None
 
+    def build_dataset(self, name: str, description: str = "") -> dict[str, Any]:
+        """Neue Datensatz-Version aus den belegten Erkenntnissen des Knowledge Store."""
+        examples, skipped = from_findings(self.research.knowledge.all_findings())
+        if not examples:
+            raise ServiceError(
+                "no_examples",
+                "No usable findings yet – run research first (only supported findings are used)",
+                400,
+                dict(skipped),
+            )
+        try:
+            return self.training.datasets.build(
+                name, examples, skipped=skipped, description=description
+            )
+        except DatasetError as exc:
+            raise ServiceError("invalid_request", str(exc), 400) from exc
+
     async def shutdown(self) -> None:
+        await self.training.shutdown()
         await asyncio.to_thread(self.runtime.stop)
         await self.research.shutdown()
         await self.agent_tasks.shutdown()

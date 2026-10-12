@@ -76,3 +76,9 @@ ignore = ["RUF001", "RUF002", "RUF003"]
 python_version = "3.12"
 strict = true
 packages = ["models", "agents", "tools", "memory", "evaluation", "router", "api", "desktop", "research", "training"]
+
+[[tool.mypy.overrides]]
+# laufen in der separaten Trainingsumgebung (nicht Teil der App-Abhängigkeiten)
+module = ["torch", "torch.*", "transformers", "transformers.*", "peft", "peft.*", "trl", "trl.*",
+          "datasets", "datasets.*", "huggingface_hub", "huggingface_hub.*", "tokenizers", "tokenizers.*"]
+ignore_missing_imports = true

@@ -4,6 +4,7 @@ import { desktopPanel, handleDesktopEvent, initDesktop } from "./desktop.js";
 import { formToRequest, hasActiveRun, renderResearchForm, renderRuns } from "./research.js";
 import { renderKnowledge } from "./knowledge.js";
 import { SETUP_ACTIVE, renderOneClick } from "./setup.js";
+import { jobActive, renderDatasets, renderEnv, renderJob, renderStart } from "./training.js";
 import { api, ApiError, setToken } from "./api.js";
 import { renderMarkdown, escapeHtml } from "./markdown.js";
 import { responseStats, liveLine, dayGroup, formatBytes, formatDuration, categoryLabel } from "./format.js";
@@ -625,8 +626,83 @@ async function startDownload(id) {
 
 function openSetup() {
   $("status-drawer").hidden = true;
+  $("training-drawer").hidden = true;
   $("setup-drawer").hidden = false;
   renderSetup();
+}
+
+// ----------------------------------------------------------------- Training
+
+let trainingTimer = null;
+
+async function renderTraining() {
+  const body = $("training-body");
+  let status;
+  try {
+    status = await api.trainingStatus();
+  } catch (err) {
+    body.innerHTML = `<div class="error-card"><div class="err-title">${escapeHtml(err.message)}</div></div>`;
+    return;
+  }
+  const keepForm = $("training-form") && body.contains(document.activeElement);
+  const jobs = status.jobs.length ? status.jobs.map((j) => renderJob(j, status.active_adapter)).join("") : `<p class="muted">No training runs yet.</p>`;
+  const active = status.active_adapter ? `<p>Active NOVA model: <b>${escapeHtml(status.active_adapter)}</b></p>` : "";
+  if (!keepForm) {
+    body.innerHTML = [
+      setupStep(1, "Training environment", renderEnv(status.env)),
+      setupStep(2, "Datasets", renderDatasets(status.datasets)),
+      setupStep(3, "New training", renderStart(status)),
+      `<div class="panel"><h3>Runs</h3>${active}<div id="training-jobs">${jobs}</div></div>`,
+    ].join("");
+  } else {
+    $("training-jobs").innerHTML = jobs;
+  }
+  clearTimeout(trainingTimer);
+  const busy = ["starting", "installing"].includes((status.env.setup || {}).status) || status.jobs.some(jobActive);
+  if (busy && !$("training-drawer").hidden) trainingTimer = setTimeout(renderTraining, 2000);
+}
+
+async function trainingClick(e) {
+  const t = e.target;
+  const action = async (fn) => {
+    t.disabled = true;
+    try {
+      await fn();
+    } catch (err) {
+      toast(err.message, "err");
+    } finally {
+      t.disabled = false;
+    }
+    renderTraining();
+  };
+  if (t.id === "training-setup") return action(() => api.trainingSetup());
+  if (t.id === "training-probe") return action(() => api.trainingProbe());
+  if (t.id === "training-dataset") return action(async () => toast(`Dataset ${(await api.trainingDataset("nova-knowledge")).version} built`));
+  if (t.id === "training-deactivate") return action(async () => { await api.trainingDeactivate(); refreshStatus(); });
+  if (t.dataset.trainingCancel) return action(() => api.trainingCancel(t.dataset.trainingCancel));
+  if (t.dataset.trainingApprove) {
+    if (!window.confirm("Activate this NOVA checkpoint? It replaces the current model behaviour until you switch back.")) return;
+    return action(async () => { await api.trainingApprove(t.dataset.trainingApprove); toast("NOVA checkpoint activated"); refreshStatus(); });
+  }
+}
+
+async function trainingSubmit(e) {
+  if (e.target.id !== "training-form") return;
+  e.preventDefault();
+  const f = e.target;
+  try {
+    await api.trainingStart({ dataset: f.dataset.value, choice: f.choice.value, epochs: Number(f.epochs.value) });
+    toast("Training started");
+  } catch (err) {
+    toast(err.message, "err");
+  }
+  renderTraining();
+}
+
+function openTraining() {
+  for (const id of ["status-drawer", "setup-drawer", "research-drawer"]) $(id).hidden = true;
+  $("training-drawer").hidden = false;
+  renderTraining();
 }
 
 // ----------------------------------------------------------------- Research
@@ -711,11 +787,13 @@ async function researchClick(e) {
 function openResearch() {
   $("status-drawer").hidden = true;
   $("setup-drawer").hidden = true;
+  $("training-drawer").hidden = true;
   $("research-drawer").hidden = false;
   renderResearch();
 }
 
 function openStatus() {
+  $("training-drawer").hidden = true;
   $("status-drawer").hidden = false;
   renderStatusPanel(true);
 }
@@ -925,6 +1003,11 @@ function bind() {
   });
   $("close-status").addEventListener("click", () => ($("status-drawer").hidden = true));
   $("open-research").addEventListener("click", openResearch);
+  $("open-training").addEventListener("click", openTraining);
+  $("close-training").addEventListener("click", () => ($("training-drawer").hidden = true));
+  $("refresh-training").addEventListener("click", renderTraining);
+  $("training-body").addEventListener("click", trainingClick);
+  $("training-body").addEventListener("submit", trainingSubmit);
   $("close-research").addEventListener("click", () => ($("research-drawer").hidden = true));
   $("refresh-research").addEventListener("click", () => renderResearch(true));
   $("research-body").addEventListener("submit", researchSubmit);
@@ -948,6 +1031,7 @@ function bind() {
       $("status-drawer").hidden = true;
       $("setup-drawer").hidden = true;
       $("research-drawer").hidden = true;
+      $("training-drawer").hidden = true;
       closeSidebar();
     }
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "o") {

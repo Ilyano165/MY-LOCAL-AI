@@ -61,6 +61,21 @@ class DownloadBody(BaseModel):
     accept_license: bool = False
 
 
+class DatasetBuildBody(BaseModel):
+    name: str = Field(default="nova-knowledge", pattern="^[a-z0-9][a-z0-9._-]{1,63}$")
+    description: str = Field(default="", max_length=500)
+
+
+class TrainingJobBody(BaseModel):
+    dataset: str = Field(
+        min_length=3, max_length=100, pattern="^[a-z0-9][a-z0-9._-]*@\\d+\\.\\d+\\.\\d+$"
+    )
+    choice: str = Field(min_length=1, max_length=80)
+    epochs: float = Field(default=2.0, gt=0, le=20)
+    local_model_dir: str | None = Field(default=None, max_length=1000)
+    """Optional: lokaler Ordner mit dem Basismodell (Hugging-Face-Format) statt Download."""
+
+
 class RuntimeSetupBody(BaseModel):
     choice: str | None = Field(default=None, max_length=80)
     accept_license: bool = False
@@ -307,6 +322,48 @@ def create_app(config: ApiConfig, *, service: NovaService | None = None) -> Fast
         await asyncio.to_thread(svc.runtime.stop)
         await svc._start_managed_runtime()
         return svc.runtime.status()
+
+    # ------------------------------------------------------------------ Training
+
+    @app.get("/training/status")
+    async def training_status() -> dict[str, Any]:
+        return svc.training.status()
+
+    @app.post("/training/env/setup", status_code=202)
+    async def training_env_setup() -> dict[str, Any]:
+        return await svc.training.setup_env()
+
+    @app.post("/training/env/probe")
+    async def training_env_probe() -> dict[str, Any]:
+        return await asyncio.to_thread(svc.training.run_probe)
+
+    @app.post("/training/datasets")
+    async def training_dataset(body: DatasetBuildBody) -> dict[str, Any]:
+        return svc.build_dataset(body.name, body.description)
+
+    @app.post("/training/jobs", status_code=202)
+    async def training_start(body: TrainingJobBody) -> dict[str, Any]:
+        if body.local_model_dir and not (Path(body.local_model_dir) / "config.json").is_file():
+            raise ServiceError("invalid_request", "local_model_dir has no config.json", 400)
+        return await svc.training.start_job(
+            body.dataset, body.choice, epochs=body.epochs, local_model_dir=body.local_model_dir
+        )
+
+    @app.get("/training/jobs/{job_id}")
+    async def training_job(job_id: str) -> dict[str, Any]:
+        return svc.training.job(job_id)
+
+    @app.post("/training/jobs/{job_id}/cancel")
+    async def training_cancel(job_id: str) -> dict[str, Any]:
+        return svc.training.cancel(job_id)
+
+    @app.post("/training/jobs/{job_id}/approve")
+    async def training_approve(job_id: str) -> dict[str, Any]:
+        return await svc.training.approve(job_id)
+
+    @app.post("/training/deactivate")
+    async def training_deactivate() -> dict[str, Any]:
+        return await svc.training.deactivate()
 
     @app.get("/models/catalog")
     async def model_catalog() -> dict[str, Any]:

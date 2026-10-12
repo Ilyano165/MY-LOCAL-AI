@@ -85,6 +85,7 @@ Check "program files in %LOCALAPPDATA%\Programs\NOVA" {
   Expect (Test-Path $nova) "nova.exe missing"
   Expect (Test-Path (Join-Path $programDir "nova-launcher.exe")) "nova-launcher.exe missing"
   Expect (Test-Path (Join-Path $programDir "_internal\api\static\index.html")) "UI files missing"
+  Expect (Test-Path (Join-Path $programDir "_internal\trainer\runner.py")) "trainer scripts missing"
   $programDir
 }
 Check "Start Menu shortcuts" {

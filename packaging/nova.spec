@@ -34,6 +34,10 @@ datas = [
     (str(ROOT / "config" / "model-catalog.example.json"), "config"),
     (str(ROOT / "config" / "recommended-models.json"), "config"),
     (str(BUILD / "VERSION"), "."),
+] + [
+    # Trainings-Skripte laufen in der separaten Trainingsumgebung (nicht im Bundle-Python)
+    (str(ROOT / "training" / f"{name}.py"), "trainer")
+    for name in ("runner", "evaluate", "export", "probe")
 ]
 excludes = [
     "tkinter",

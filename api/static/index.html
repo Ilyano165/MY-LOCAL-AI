@@ -30,6 +30,9 @@
           <span class="status-dot" id="status-dot" data-state="unknown"></span>
           <span class="foot-label" id="status-label">Checking status…</span>
         </button>
+        <button class="icon-btn" id="open-training" title="Training" aria-label="Training">
+          <svg viewBox="0 0 24 24"><path d="M3 9l9-5 9 5-9 5-9-5z"/><path d="M7 11v5c3 2 7 2 10 0v-5M21 9v6"/></svg>
+        </button>
         <button class="icon-btn" id="open-research" title="Research" aria-label="Research">
           <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2M8.5 11h5M11 8.5v5"/></svg>
         </button>
@@ -117,6 +120,17 @@
         </div>
       </div>
       <div class="drawer-body" id="research-body"></div>
+    </aside>
+
+    <aside class="drawer drawer-wide" id="training-drawer" aria-label="Training" hidden>
+      <div class="drawer-head">
+        <h2>Training</h2>
+        <div class="drawer-actions">
+          <button class="ghost-btn" id="refresh-training">Refresh</button>
+          <button class="icon-btn" id="close-training" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </div>
+      </div>
+      <div class="drawer-body" id="training-body"></div>
     </aside>
 
     <aside class="drawer" id="status-drawer" aria-label="System status" hidden>

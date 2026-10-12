@@ -381,3 +381,18 @@ def test_chat_shows_research_sources(page: object, servers: dict[str, str]) -> N
     box.locator("summary").click()
     link = box.locator('a[href="https://example.org/zebra"]')
     playwright_api.expect(link).to_have_attribute("rel", "noopener noreferrer")
+
+
+def test_training_drawer_shows_environment_and_steps(page: object, servers: dict[str, str]) -> None:
+    """Training-Bereich: ohne Trainingsumgebung wird die Einrichtung angeboten, Start gesperrt."""
+    expect = playwright_api.expect
+    page.goto(servers["dev"])  # type: ignore[attr-defined]
+    page.click("#open-training")  # type: ignore[attr-defined]
+    drawer = page.locator("#training-drawer")  # type: ignore[attr-defined]
+    expect(drawer).to_be_visible()
+    expect(drawer.locator("#training-setup")).to_be_visible()
+    expect(drawer).to_contain_text("Build dataset from research knowledge")
+    expect(drawer).to_contain_text("Needs a ready training environment")
+    expect(drawer).to_contain_text("No training runs yet")
+    page.click("#open-research")  # type: ignore[attr-defined]
+    expect(drawer).to_be_hidden()
